@@ -10,6 +10,7 @@ categories = ["no-std"]
 [dependencies]
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_64"] }
-hashbrown = { version = "0.15", default-features = false, features = ["default-hasher"] }
-ahash = { version = "0.8", default-features = false, features = ["no-rng"] }
+heapless = "0.8"
 no_std_tool_macros = { path = "no_std_tool_macros" }
+ahash = { version = "0.8", default-features = false }
+hashbrown = { version = "0.14", default-features = false, features = ["inline-more", "ahash"] }

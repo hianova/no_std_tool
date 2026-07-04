@@ -11,8 +11,6 @@ macro_rules! base {
     () => {
         #[cfg(test)]
         extern crate std;
-        
-        extern crate alloc;
     };
 }
 
@@ -27,7 +25,6 @@ macro_rules! module {
     ) => {
         $(#[$meta])*
         #[allow(non_camel_case_types)]
-        #[allow(unsafe_op_in_unsafe_fn)]
         #[allow(unused_variables)]
         #[allow(unused_assignments)]
         #[allow(unused_mut)]

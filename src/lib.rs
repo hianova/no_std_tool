@@ -1,4 +1,5 @@
 #![no_std]
+#![deny(unsafe_op_in_unsafe_fn)]
 //! `no_std_tool` is a universal foundation library for `#![no_std]` bare-metal Rust projects.
 //!
 //! This crate consolidates essential utilities that are frequently required in embedded,
