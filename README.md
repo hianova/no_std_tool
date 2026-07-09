@@ -48,6 +48,15 @@ lazy_static! {
 }
 ```
 
+## Complexity Auditing
+
+This project is configured for automated algorithmic complexity and performance auditing via `CovOpt-Analyzer`.
+
+You can verify the algorithmic complexity of the underlying operations using:
+```bash
+covopt audit
+```
+
 ## License
 
 MIT

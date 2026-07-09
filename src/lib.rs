@@ -14,12 +14,12 @@
 //! - **Debugging (`debug`)**: Global tracking for memory leaks and thread lifecycles.
 //! - **Macros (`macros`)**: Common boilerplate generators for `#![no_std]` projects.
 
-pub mod macros;
-pub mod sync;
-pub mod math;
-pub mod debug;
 pub mod collections;
+pub mod debug;
+pub mod macros;
+pub mod math;
+pub mod sync;
 
 pub use lazy_static::lazy_static;
-pub use rkyv;
 pub use no_std_tool_macros::auto_static;
+pub use rkyv;

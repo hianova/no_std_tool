@@ -3,7 +3,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::{quote, format_ident};
 use syn::visit::Visit;
-use syn::{parse_macro_input, DeriveInput, ItemStruct, Meta, Lit, Expr, Error};
+use syn::{parse_macro_input, ItemStruct, Lit, Error};
 
 struct AllocVisitor {
     errors: Vec<Error>,

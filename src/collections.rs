@@ -1,20 +1,20 @@
 //! Collection types and hashing algorithms for `no_std` environments.
 //!
 //! This module provides dynamic data structures that require memory allocation
-//! but do not require the standard library. It re-exports high-performance, 
+//! but do not require the standard library. It re-exports high-performance,
 //! `no_std` compatible containers and hashing algorithms.
 
-/// Fixed-capacity collections backed by `heapless`.
-/// 
-/// In a strict aerospace `no_std` environment, standard dynamic allocation is unavailable.
-/// This implementation provides static, fixed-capacity equivalents.
-pub use heapless::{Vec, String, FnvIndexMap, FnvIndexSet, LinearMap};
 pub use ahash;
 pub use hashbrown::{HashMap, HashSet};
+/// Fixed-capacity collections backed by `heapless`.
+///
+/// In a strict aerospace `no_std` environment, standard dynamic allocation is unavailable.
+/// This implementation provides static, fixed-capacity equivalents.
+pub use heapless::{FnvIndexMap, FnvIndexSet, LinearMap, String, Vec};
 
-use core::sync::atomic::{AtomicUsize, Ordering};
-use core::mem::MaybeUninit;
 use core::cell::UnsafeCell;
+use core::mem::MaybeUninit;
+use core::sync::atomic::{AtomicUsize, Ordering};
 
 /// A lock-free, zero-allocation Single-Producer Single-Consumer (SPSC) Ring Buffer.
 ///
@@ -32,7 +32,10 @@ unsafe impl<T: Send, const N: usize> Sync for RingBuffer<T, N> {}
 impl<T, const N: usize> RingBuffer<T, N> {
     /// Asserts that N is a power of two to prevent modulo discontinuity on overflow.
     pub const fn new() -> Self {
-        assert!(N.is_power_of_two(), "RingBuffer capacity must be a power of two");
+        assert!(
+            N.is_power_of_two(),
+            "RingBuffer capacity must be a power of two"
+        );
         Self {
             head: AtomicUsize::new(0),
             tail: AtomicUsize::new(0),
@@ -45,15 +48,15 @@ impl<T, const N: usize> RingBuffer<T, N> {
     pub fn push(&self, value: T) -> Result<(), T> {
         let head = self.head.load(Ordering::Relaxed);
         let tail = self.tail.load(Ordering::Acquire);
-        
+
         if head.wrapping_sub(tail) >= N {
             return Err(value);
         }
-        
+
         unsafe {
             (*self.data[head & (N - 1)].get()).write(value);
         }
-        
+
         self.head.store(head.wrapping_add(1), Ordering::Release);
         Ok(())
     }
@@ -63,15 +66,13 @@ impl<T, const N: usize> RingBuffer<T, N> {
     pub fn pop(&self) -> Option<T> {
         let tail = self.tail.load(Ordering::Relaxed);
         let head = self.head.load(Ordering::Acquire);
-        
+
         if head == tail {
             return None;
         }
-        
-        let value = unsafe {
-            (*self.data[tail & (N - 1)].get()).assume_init_read()
-        };
-        
+
+        let value = unsafe { (*self.data[tail & (N - 1)].get()).assume_init_read() };
+
         self.tail.store(tail.wrapping_add(1), Ordering::Release);
         Some(value)
     }

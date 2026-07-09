@@ -1,9 +1,11 @@
 [[target]]
 test = "test_exp_approx"
+tests = "test_exp_approx,test_exp_approx_edge_cases"
+fuzz_iterations = 5
 expected = "O(1)"
 n_values = "100,500,1000"
 target_file = "src/math.rs"
-target_line = 13
+target_line = 16
 require_cache_padding = false
 require_branch_hints = false
 require_aerospace_grade = true

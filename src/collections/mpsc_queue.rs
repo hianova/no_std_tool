@@ -1,4 +1,3 @@
-
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
@@ -56,6 +55,12 @@ pub struct BoundedQueue<T, const N: usize> {
 
 unsafe impl<T: Send, const N: usize> Send for BoundedQueue<T, N> {}
 unsafe impl<T: Send, const N: usize> Sync for BoundedQueue<T, N> {}
+
+impl<T, const N: usize> Default for BoundedQueue<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl<T, const N: usize> BoundedQueue<T, N> {
     pub const fn new() -> Self {

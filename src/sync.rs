@@ -13,8 +13,8 @@ pub struct TimeoutError;
 
 /// A full suite of atomic types re-exported from `core::sync::atomic`.
 pub use core::sync::atomic::{
-    AtomicBool, AtomicPtr, AtomicU8, AtomicU16, AtomicU32, AtomicUsize, 
-    AtomicI8, AtomicI16, AtomicI32, AtomicIsize, Ordering
+    AtomicBool, AtomicI16, AtomicI32, AtomicI8, AtomicIsize, AtomicPtr, AtomicU16, AtomicU32,
+    AtomicU8, AtomicUsize, Ordering,
 };
 
 /// 64-bit atomics are conditionally compiled based on target architecture support.
@@ -33,7 +33,7 @@ pub use core::hint::spin_loop;
 /// # Examples
 /// ```
 /// use no_std_tool::sync::SpinMutex;
-/// 
+///
 /// let mutex = SpinMutex::new(0);
 /// {
 ///     let mut guard = mutex.lock().unwrap();
@@ -196,14 +196,12 @@ impl<T: ?Sized> IrqSafeMutex<T> {
                 options(nomem, preserves_flags)
             );
         }
-        
+
         match self.inner.lock() {
-            Ok(inner_guard) => {
-                Ok(IrqSafeMutexGuard {
-                    inner_guard: core::mem::ManuallyDrop::new(inner_guard),
-                    saved_rflags: rflags,
-                })
-            }
+            Ok(inner_guard) => Ok(IrqSafeMutexGuard {
+                inner_guard: core::mem::ManuallyDrop::new(inner_guard),
+                saved_rflags: rflags,
+            }),
             Err(e) => {
                 // Restore interrupts if they were previously enabled before returning error
                 if (rflags & 0x200) != 0 {
@@ -242,7 +240,7 @@ impl<T: ?Sized> Drop for IrqSafeMutexGuard<'_, T> {
         unsafe {
             core::mem::ManuallyDrop::drop(&mut self.inner_guard);
         }
-        
+
         // Then restore interrupts if they were enabled (IF flag is bit 9, 0x200)
         if (self.saved_rflags & 0x200) != 0 {
             // SAFETY: Restoring original interrupt state safely.
@@ -283,17 +281,22 @@ impl AtomicMailboxU32 {
             return Err(data);
         }
         // Use compare_exchange in case of a race condition with another producer.
-        self.state.compare_exchange(
-            u32::MAX, 
-            data, 
-            core::sync::atomic::Ordering::Release, 
-            core::sync::atomic::Ordering::Relaxed
-        ).map(|_| ()).map_err(|_| data)
+        self.state
+            .compare_exchange(
+                u32::MAX,
+                data,
+                core::sync::atomic::Ordering::Release,
+                core::sync::atomic::Ordering::Relaxed,
+            )
+            .map(|_| ())
+            .map_err(|_| data)
     }
 
     /// Try to pop the value. Returns None if empty.
     pub fn try_pop(&self) -> Option<u32> {
-        let current = self.state.swap(u32::MAX, core::sync::atomic::Ordering::Acquire);
+        let current = self
+            .state
+            .swap(u32::MAX, core::sync::atomic::Ordering::Acquire);
         if current == u32::MAX {
             None
         } else {
