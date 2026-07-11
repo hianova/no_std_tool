@@ -93,6 +93,7 @@ impl<T, const N: usize> BoundedQueue<T, N> {
     #[inline(always)]
     pub fn push(&self, item: T) -> Result<(), T> {
         let mut tail = self.tail.load(Ordering::Relaxed);
+        let mut spins = 0u32;
         loop {
             let head = self.head.load(Ordering::Acquire);
 
@@ -115,7 +116,11 @@ impl<T, const N: usize> BoundedQueue<T, N> {
                     if tail.wrapping_sub(current_head) >= self.buffer.len() {
                         return Err(item);
                     } else {
+                        if spins >= 10_000 {
+                            return Err(item); // Prevent infinite heating
+                        }
                         core::hint::spin_loop();
+                        spins += 1;
                         continue;
                     }
                 } else {
@@ -181,7 +186,7 @@ impl<T, const N: usize> BoundedQueue<T, N> {
 
             // Reset gate and advance head.
             slot.state.store(EMPTY, Ordering::Release);
-            self.head.fetch_add(1, Ordering::Relaxed);
+            self.head.fetch_add(1, Ordering::Release);
             Some(item)
         } else {
             None

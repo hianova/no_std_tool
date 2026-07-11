@@ -28,7 +28,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 /// # Examples
 ///
 /// ```
-/// use cddb::bloom::SimpleBloom;
+/// use no_std_tool::collections::bloom::SimpleBloom;
 ///
 /// // 1 024 words × 64 bits = 65 536-bit filter
 /// let bloom = SimpleBloom::<1024>::new();
@@ -58,7 +58,7 @@ impl<const N: usize> SimpleBloom<N> {
     /// # Examples
     ///
     /// ```
-    /// use cddb::bloom::SimpleBloom;
+    /// use no_std_tool::collections::bloom::SimpleBloom;
     ///
     /// // Create a filter with 512 × 64 = 32 768 bits
     /// let bloom = SimpleBloom::<512>::new();
@@ -82,7 +82,7 @@ impl<const N: usize> SimpleBloom<N> {
     /// # Examples
     ///
     /// ```
-    /// use cddb::bloom::SimpleBloom;
+    /// use no_std_tool::collections::bloom::SimpleBloom;
     ///
     /// let bloom = SimpleBloom::<64>::new();
     /// bloom.insert(&42usize);
@@ -118,7 +118,7 @@ impl<const N: usize> SimpleBloom<N> {
     /// # Examples
     ///
     /// ```
-    /// use cddb::bloom::SimpleBloom;
+    /// use no_std_tool::collections::bloom::SimpleBloom;
     ///
     /// let bloom = SimpleBloom::<64>::new();
     /// assert!(!bloom.contains(&"absent"));
@@ -150,7 +150,7 @@ impl<const N: usize> SimpleBloom<N> {
     /// # Examples
     ///
     /// ```
-    /// use cddb::bloom::SimpleBloom;
+    /// use no_std_tool::collections::bloom::SimpleBloom;
     ///
     /// let bloom = SimpleBloom::<64>::new();
     /// assert_eq!(bloom.count_set_bits(), 0);
@@ -175,7 +175,7 @@ impl<const N: usize> SimpleBloom<N> {
     /// # Examples
     ///
     /// ```
-    /// use cddb::bloom::SimpleBloom;
+    /// use no_std_tool::collections::bloom::SimpleBloom;
     ///
     /// let bloom = SimpleBloom::<128>::new();
     /// assert_eq!(bloom.total_bits(), 128 * 64);
@@ -195,7 +195,7 @@ impl<const N: usize> SimpleBloom<N> {
     /// # Examples
     ///
     /// ```
-    /// use cddb::bloom::SimpleBloom;
+    /// use no_std_tool::collections::bloom::SimpleBloom;
     ///
     /// let bloom = SimpleBloom::<64>::new();
     /// bloom.insert(&99usize);

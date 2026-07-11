@@ -14,11 +14,15 @@
 //! - **Debugging (`debug`)**: Global tracking for memory leaks and thread lifecycles.
 //! - **Macros (`macros`)**: Common boilerplate generators for `#![no_std]` projects.
 
+extern crate alloc;
+
 pub mod collections;
 pub mod debug;
 pub mod macros;
 pub mod math;
 pub mod sync;
+pub mod bitmap_sched;
+pub mod allocator;
 
 pub use lazy_static::lazy_static;
 pub use no_std_tool_macros::auto_static;
