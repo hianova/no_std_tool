@@ -1,1 +1,6 @@
 /target
+.agents/
+.covopt/
+.covopt.toml
+**/.DS_Store
+*.swp

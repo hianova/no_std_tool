@@ -8,10 +8,12 @@ This crate consolidates essential utilities that are frequently required in embe
 
 - **`sync`**: Synchronization primitives tailored for bare-metal targets.
   - `SpinMutex` & `SpinMutexGuard`: A lightweight lock relying purely on atomic operations and spin hints.
+  - `CachePadded`: Eliminates false sharing by aligning structures to typical cache line boundaries (64/128 bytes).
   - `Backoff`: A spin-then-yield backoff helper for tight polling loops to prevent CPU exhaustion.
   - Full suite of standard library Atomics (`AtomicBool`, `AtomicPtr`, `AtomicU8`..`AtomicU64`, etc.).
 - **`collections`**: Dynamic data structures powered by `alloc`.
   - `HashMap` and `HashSet` backed by `hashbrown`.
+  - `mpsc_queue::BoundedQueue`: A lock-free, wait-free compatible bounded multi-producer single-consumer queue.
   - High-performance, non-cryptographic `ahash` hashing algorithms (faster than `SipHash` and DOS-resistant).
 - **`math`**: Zero-float mathematical engine.
   - Pure integer approximations of floating-point operations like `exp_approx_q16` and `rsqrt_approx_i32`.
@@ -21,6 +23,7 @@ This crate consolidates essential utilities that are frequently required in embe
 - **`macros`**: Declarative macros for module scaffolding.
   - `base!()` to inject `alloc` and conditional `std` testing blocks.
   - `module!{}` to wrap and suppress common lints during `#![no_std]` integration.
+  - `auto_static!`: A specialized macro to safely and effortlessly declare `#![no_std]` thread-safe global static arrays or partitioned registries.
 
 ## Usage
 

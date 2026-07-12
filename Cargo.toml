@@ -1,16 +1,17 @@
 [package]
 name = "no_std_tool"
-version = "0.1.0"
-edition = "2021"
+version = "1.0.0"
+edition = "2024"
+authors = ["hianova"]
 description = "Common no_std boilerplate and synchronization macros"
 license = "MIT"
 keywords = ["no_std", "macros", "sync"]
 categories = ["no-std"]
-
+repository = "https://github.com/hianova/no_std_tool"
 [dependencies]
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_64"] }
 heapless = "0.8"
-no_std_tool_macros = { path = "no_std_tool_macros" }
+no_std_tool_macros = { path = "no_std_tool_macros", version = "1.0.0" }
 ahash = { version = "0.8", default-features = false }
 hashbrown = { version = "0.14", default-features = false, features = ["inline-more", "ahash"] }
