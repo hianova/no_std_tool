@@ -75,14 +75,15 @@ mod tests {
     extern crate std;
     use super::*;
 
-    #[test]
-    fn test_exp_approx() {
+    fn run_exp_approx_common() {
         let mut test_vals: crate::collections::Vec<i32, 16> = crate::collections::Vec::new();
         let _ = test_vals.push(0);
         let _ = test_vals.push(-1);
         let _ = test_vals.push(-2);
         let _ = test_vals.push(1);
         let _ = test_vals.push(2);
+        let _ = test_vals.push(-11);
+        let _ = test_vals.push(11);
 
         // CovOpt 2.0 Entropy Fuzz Injection
         if let Ok(seed_str) = std::env::var("COVOPT_FUZZ_SEED") {
@@ -94,10 +95,20 @@ mod tests {
 
         for v in test_vals {
             let v_q16 = v * FIXED_POINT_ONE;
-            if let Some(res_q16) = exp_approx_q16(v_q16) {
-                assert!(res_q16 >= 0);
+            let res_q16 = exp_approx_q16(v_q16);
+            if v < -10 {
+                assert_eq!(res_q16, Some(0));
+            } else if v > 10 {
+                assert_eq!(res_q16, None);
+            } else {
+                assert!(res_q16.is_some());
             }
         }
+    }
+
+    #[test]
+    fn test_exp_approx() {
+        run_exp_approx_common();
     }
 
     #[test]
@@ -110,8 +121,7 @@ mod tests {
 
     #[test]
     fn test_exp_approx_edge_cases() {
-        assert_eq!(exp_approx_q16(-11 * FIXED_POINT_ONE), Some(0));
-        assert_eq!(exp_approx_q16(11 * FIXED_POINT_ONE), None);
+        run_exp_approx_common();
     }
 
     #[test]
