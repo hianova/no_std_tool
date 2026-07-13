@@ -45,6 +45,10 @@ impl AppArena {
     }
 
     /// Resets the arena, discarding all allocations.
+    ///
+    /// # Safety
+    /// The caller must guarantee that no previously allocated memory from this arena
+    /// is accessed or dereferenced after calling reset.
     pub unsafe fn reset(&self) {
         unsafe {
             *self.next.get() = self.start;
@@ -97,7 +101,7 @@ mod tests {
 
     unsafe impl GlobalAlloc for MockAllocator {
         unsafe fn alloc(&self, _layout: Layout) -> *mut u8 {
-            1 as *mut u8
+            core::ptr::dangling_mut()
         }
         unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {}
     }
@@ -155,6 +159,12 @@ unsafe impl<T: Send, const N: usize> Sync for StaticSlab<T, N> {}
 use core::sync::atomic::{AtomicU16, AtomicU32, Ordering};
 use core::mem::MaybeUninit;
 
+impl<T, const N: usize> Default for StaticSlab<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T, const N: usize> StaticSlab<T, N> {
     pub const fn new() -> Self {
         assert!(N <= 32, "StaticSlab max capacity is 32");
@@ -165,6 +175,7 @@ impl<T, const N: usize> StaticSlab<T, N> {
         }
     }
     
+    #[allow(clippy::result_unit_err, deprecated)]
     pub fn allocate(&self, value: T) -> Result<SlabHandle, ()> {
         let max_mask = if N == 32 { u32::MAX } else { (1 << N) - 1 };
         let mut allocated_index = 0;
@@ -191,6 +202,7 @@ impl<T, const N: usize> StaticSlab<T, N> {
         }
     }
     
+    #[allow(clippy::result_unit_err)]
     pub fn free(&self, handle: SlabHandle) -> Result<(), ()> {
         let index = handle.index();
         if index >= N { return Err(()); }

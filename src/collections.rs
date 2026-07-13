@@ -31,6 +31,12 @@ pub struct RingBuffer<T, const N: usize> {
 unsafe impl<T: Send, const N: usize> Send for RingBuffer<T, N> {}
 unsafe impl<T: Send, const N: usize> Sync for RingBuffer<T, N> {}
 
+impl<T, const N: usize> Default for RingBuffer<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T, const N: usize> RingBuffer<T, N> {
     /// Asserts that N is a power of two to prevent modulo discontinuity on overflow.
     pub const fn new() -> Self {

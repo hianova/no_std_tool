@@ -12,11 +12,9 @@ fn run_exp_approx_common() {
     let _ = test_vals.push(11);
 
     // CovOpt 2.0 Entropy Fuzz Injection
-    if let Ok(seed_str) = std::env::var("COVOPT_FUZZ_SEED") {
-        if let Ok(seed) = seed_str.parse::<i32>() {
-            let _ = test_vals.push(seed % 15);
-            let _ = test_vals.push(-(seed % 15));
-        }
+    if let Some(seed) = std::env::var("COVOPT_FUZZ_SEED").ok().and_then(|s| s.parse::<i32>().ok()) {
+        let _ = test_vals.push(seed % 15);
+        let _ = test_vals.push(-(seed % 15));
     }
 
     for v in test_vals {

@@ -46,6 +46,12 @@ pub struct SimpleBloom<const N: usize> {
     hash_builder: RandomState,
 }
 
+impl<const N: usize> Default for SimpleBloom<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<const N: usize> SimpleBloom<N> {
     const NUM_BITS: usize = N * core::mem::size_of::<usize>() * 8;
 

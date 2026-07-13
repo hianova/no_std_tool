@@ -13,5 +13,4 @@ module! {
 #[test]
 fn test_macro_expansion() {
     my_test_module::do_something();
-    assert!(true);
 }

@@ -6,6 +6,12 @@ pub struct BitmapScheduler {
     ready_queue: AtomicU64,
 }
 
+impl Default for BitmapScheduler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BitmapScheduler {
     pub const fn new() -> Self {
         BitmapScheduler {
