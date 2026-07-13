@@ -128,3 +128,133 @@ mod tests {
         assert!(check_memory_leaks());
     }
 }
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SlabHandle(u32);
+
+impl SlabHandle {
+    pub fn index(&self) -> usize {
+        (self.0 & 0xFFFF) as usize
+    }
+    
+    pub fn generation(&self) -> u16 {
+        (self.0 >> 16) as u16
+    }
+    
+    pub fn new(index: usize, generation: u16) -> Self {
+        SlabHandle(((generation as u32) << 16) | (index as u32))
+    }
+}
+
+pub struct StaticSlab<T, const N: usize> {
+    mask: AtomicU32,
+    generations: [AtomicU16; N],
+    slots: [crate::sync::CachePadded<UnsafeCell<MaybeUninit<T>>>; N],
+}
+
+unsafe impl<T: Send, const N: usize> Sync for StaticSlab<T, N> {}
+
+use core::sync::atomic::{AtomicU16, AtomicU32, Ordering};
+use core::mem::MaybeUninit;
+
+impl<T, const N: usize> StaticSlab<T, N> {
+    pub const fn new() -> Self {
+        assert!(N <= 32, "StaticSlab max capacity is 32");
+        StaticSlab {
+            mask: AtomicU32::new(0),
+            generations: [const { AtomicU16::new(0) }; N],
+            slots: [const { crate::sync::CachePadded { value: UnsafeCell::new(MaybeUninit::uninit()) } }; N],
+        }
+    }
+    
+    pub fn allocate(&self, value: T) -> Result<SlabHandle, ()> {
+        let mut current_mask = self.mask.load(Ordering::Relaxed);
+        let max_mask = if N == 32 { u32::MAX } else { (1 << N) - 1 };
+        
+        loop {
+            let effective_mask = current_mask | !max_mask;
+            if effective_mask == u32::MAX {
+                return Err(());
+            }
+            
+            let index = effective_mask.trailing_ones() as usize;
+            let new_mask = current_mask | (1 << index);
+            
+            match self.mask.compare_exchange_weak(
+                current_mask,
+                new_mask,
+                Ordering::Acquire,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    unsafe {
+                        (*self.slots[index].value.get()).write(value);
+                    }
+                    let gen_val = self.generations[index].load(Ordering::Relaxed);
+                    return Ok(SlabHandle::new(index, gen_val));
+                }
+                Err(updated) => current_mask = updated,
+            }
+        }
+    }
+    
+    pub fn free(&self, handle: SlabHandle) -> Result<(), ()> {
+        let index = handle.index();
+        if index >= N { return Err(()); }
+        
+        let gen_val = self.generations[index].load(Ordering::Acquire);
+        if gen_val != handle.generation() {
+            return Err(());
+        }
+        
+        let prev = self.mask.fetch_and(!(1 << index), Ordering::Release);
+        if (prev & (1 << index)) != 0 {
+            unsafe {
+                (*self.slots[index].value.get()).assume_init_drop();
+            }
+            self.generations[index].fetch_add(1, Ordering::Release);
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+    
+    pub fn get(&self, handle: SlabHandle) -> Option<&T> {
+        let index = handle.index();
+        if index >= N { return None; }
+        
+        let gen_val = self.generations[index].load(Ordering::Acquire);
+        if gen_val != handle.generation() {
+            return None;
+        }
+        
+        if self.mask.load(Ordering::Acquire) & (1 << index) != 0 {
+            unsafe {
+                Some((*self.slots[index].value.get()).assume_init_ref())
+            }
+        } else {
+            None
+        }
+    }
+    
+    #[allow(clippy::mut_from_ref)]
+    pub fn get_mut_unchecked(&self, handle: SlabHandle) -> Option<&mut T> {
+        let index = handle.index();
+        if index >= N { return None; }
+        
+        let gen_val = self.generations[index].load(Ordering::Acquire);
+        if gen_val != handle.generation() {
+            return None;
+        }
+        
+        if self.mask.load(Ordering::Acquire) & (1 << index) != 0 {
+            unsafe {
+                Some((*self.slots[index].value.get()).assume_init_mut())
+            }
+        } else {
+            None
+        }
+    }
+}
+

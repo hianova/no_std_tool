@@ -10,8 +10,14 @@ categories = ["no-std"]
 repository = "https://github.com/hianova/no_std_tool"
 [dependencies]
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
-rkyv = { version = "0.7", default-features = false, features = ["size_64"] }
 heapless = "0.8"
 no_std_tool_macros = { path = "no_std_tool_macros", version = "1.0.0" }
 ahash = { version = "0.8", default-features = false }
 hashbrown = { version = "0.14", default-features = false, features = ["inline-more", "ahash"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rkyv = { version = "0.7", default-features = false, features = ["size_64"] }
+

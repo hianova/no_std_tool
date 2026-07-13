@@ -16,7 +16,7 @@ pub use core::sync::atomic::{
     AtomicBool, AtomicI16, AtomicI32, AtomicI8, AtomicIsize, AtomicPtr, AtomicU16, AtomicU32,
     AtomicU8, AtomicUsize, Ordering,
 };
-pub use alloc::sync::Arc;
+pub use alloc::sync::{Arc, Weak};
 
 /// 64-bit atomics are conditionally compiled based on target architecture support.
 #[cfg(target_has_atomic = "64")]

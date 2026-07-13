@@ -11,6 +11,8 @@ pub use hashbrown::{HashMap, HashSet};
 /// In a strict aerospace `no_std` environment, standard dynamic allocation is unavailable.
 /// This implementation provides static, fixed-capacity equivalents.
 pub use heapless::{FnvIndexMap, FnvIndexSet, LinearMap, String, Vec};
+pub use alloc::vec::Vec as AllocVec;
+pub use alloc::boxed::Box;
 
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
