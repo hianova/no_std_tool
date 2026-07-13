@@ -33,10 +33,7 @@ impl AppArena {
             let mut current = *next_ptr;
             
             // Align the pointer
-            let align_offset = current % align;
-            if align_offset != 0 {
-                current += align - align_offset;
-            }
+            current = current.next_multiple_of(align);
             
             if current + size > self.end {
                 return None; // OOM in Arena
@@ -169,33 +166,28 @@ impl<T, const N: usize> StaticSlab<T, N> {
     }
     
     pub fn allocate(&self, value: T) -> Result<SlabHandle, ()> {
-        let mut current_mask = self.mask.load(Ordering::Relaxed);
         let max_mask = if N == 32 { u32::MAX } else { (1 << N) - 1 };
+        let mut allocated_index = 0;
         
-        loop {
+        let update_result = self.mask.fetch_update(Ordering::Acquire, Ordering::Relaxed, |current_mask| {
             let effective_mask = current_mask | !max_mask;
             if effective_mask == u32::MAX {
-                return Err(());
+                return None; // No free slots
             }
-            
             let index = effective_mask.trailing_ones() as usize;
-            let new_mask = current_mask | (1 << index);
-            
-            match self.mask.compare_exchange_weak(
-                current_mask,
-                new_mask,
-                Ordering::Acquire,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => {
-                    unsafe {
-                        (*self.slots[index].value.get()).write(value);
-                    }
-                    let gen_val = self.generations[index].load(Ordering::Relaxed);
-                    return Ok(SlabHandle::new(index, gen_val));
+            allocated_index = index;
+            Some(current_mask | (1 << index))
+        });
+        
+        match update_result {
+            Ok(_) => {
+                unsafe {
+                    (*self.slots[allocated_index].value.get()).write(value);
                 }
-                Err(updated) => current_mask = updated,
+                let gen_val = self.generations[allocated_index].load(Ordering::Relaxed);
+                Ok(SlabHandle::new(allocated_index, gen_val))
             }
+            Err(_) => Err(()),
         }
     }
     

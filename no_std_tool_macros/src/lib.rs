@@ -90,10 +90,16 @@ pub fn auto_static(args: TokenStream, input: TokenStream) -> TokenStream {
     let expanded = quote! {
         #input_ast
 
-        #[unsafe(link_section = #section_name)]
+        
+        #[cfg_attr(target_vendor = "apple", unsafe(link_section = concat!("__DATA,", #partition)))]
+        #[cfg_attr(not(target_vendor = "apple"), unsafe(link_section = #section_name))]
+
         static mut #pool_name: [core::mem::MaybeUninit<#struct_name>; #capacity] = [const { core::mem::MaybeUninit::uninit() }; #capacity];
 
-        #[unsafe(link_section = #section_name)]
+        
+        #[cfg_attr(target_vendor = "apple", unsafe(link_section = concat!("__DATA,", #partition)))]
+        #[cfg_attr(not(target_vendor = "apple"), unsafe(link_section = #section_name))]
+
         static mut #bitmap_name: [u64; #num_bitmap_words] = [0; #num_bitmap_words];
 
         impl #struct_name {
