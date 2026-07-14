@@ -29,7 +29,8 @@ impl BitmapScheduler {
     /// Marks a task as parked (not ready).
     pub fn clear_ready(&self, task_id: usize) {
         if task_id < 64 {
-            self.ready_queue.fetch_and(!(1 << task_id), Ordering::Release);
+            self.ready_queue
+                .fetch_and(!(1 << task_id), Ordering::Release);
         }
     }
 
@@ -58,7 +59,7 @@ impl BitmapScheduler {
         } else {
             !((1u64 << (current_task_id + 1)) - 1)
         };
-        
+
         let masked = bitmap & mask;
 
         if masked != 0 {

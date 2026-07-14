@@ -5,14 +5,14 @@
 //! `no_std` compatible containers and hashing algorithms.
 
 pub use ahash;
+pub use alloc::boxed::Box;
+pub use alloc::vec::Vec as AllocVec;
 pub use hashbrown::{HashMap, HashSet};
 /// Fixed-capacity collections backed by `heapless`.
 ///
 /// In a strict aerospace `no_std` environment, standard dynamic allocation is unavailable.
 /// This implementation provides static, fixed-capacity equivalents.
 pub use heapless::{FnvIndexMap, FnvIndexSet, LinearMap, String, Vec};
-pub use alloc::vec::Vec as AllocVec;
-pub use alloc::boxed::Box;
 
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;

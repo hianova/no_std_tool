@@ -69,5 +69,3 @@ pub fn silu_approx_i8(x: i8) -> Option<i8> {
     let res_i32 = (result >> FIXED_POINT_SHIFT) as i32;
     Some(res_i32.clamp(-128, 127) as i8)
 }
-
-

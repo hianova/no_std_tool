@@ -1,8 +1,9 @@
 extern crate std;
-use no_std_tool::math::{exp_approx_q16, silu_approx_i8, rsqrt_approx_i32, FIXED_POINT_ONE};
+use no_std_tool::math::{FIXED_POINT_ONE, exp_approx_q16, rsqrt_approx_i32, silu_approx_i8};
 
 fn run_exp_approx_common() {
-    let mut test_vals: no_std_tool::collections::Vec<i32, 16> = no_std_tool::collections::Vec::new();
+    let mut test_vals: no_std_tool::collections::Vec<i32, 16> =
+        no_std_tool::collections::Vec::new();
     let _ = test_vals.push(0);
     let _ = test_vals.push(-1);
     let _ = test_vals.push(-2);
@@ -12,7 +13,10 @@ fn run_exp_approx_common() {
     let _ = test_vals.push(11);
 
     // CovOpt 2.0 Entropy Fuzz Injection
-    if let Some(seed) = std::env::var("COVOPT_FUZZ_SEED").ok().and_then(|s| s.parse::<i32>().ok()) {
+    if let Some(seed) = std::env::var("COVOPT_FUZZ_SEED")
+        .ok()
+        .and_then(|s| s.parse::<i32>().ok())
+    {
         let _ = test_vals.push(seed % 15);
         let _ = test_vals.push(-(seed % 15));
     }

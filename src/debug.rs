@@ -3,8 +3,8 @@
 //! This module provides a global resource tracker to ensure that no memory leaks
 //! occur and that all threads and background operations drop correctly in a
 //! `#![no_std]` environment where memory sanitizers might not be available.
-//! 
-//! **Note for Aerospace-Grade `no_std` Use:** 
+//!
+//! **Note for Aerospace-Grade `no_std` Use:**
 //! To truly track dynamic memory allocations, your global allocator must be wrapped in `TrackingAllocator`.
 //! For thread tracking, your custom task scheduler must manually invoke `track_thread_spawn` and `track_thread_exit`.
 //! Relying solely on `ScopedResource` only provides scoped tracking and does not catch global leaks or untracked task terminations.

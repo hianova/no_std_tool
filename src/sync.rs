@@ -11,12 +11,12 @@ use core::ops::{Deref, DerefMut};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TimeoutError;
 
+pub use alloc::sync::{Arc, Weak};
 /// A full suite of atomic types re-exported from `core::sync::atomic`.
 pub use core::sync::atomic::{
-    AtomicBool, AtomicI16, AtomicI32, AtomicI8, AtomicIsize, AtomicPtr, AtomicU16, AtomicU32,
-    AtomicU8, AtomicUsize, Ordering,
+    AtomicBool, AtomicI8, AtomicI16, AtomicI32, AtomicIsize, AtomicPtr, AtomicU8, AtomicU16,
+    AtomicU32, AtomicUsize, Ordering,
 };
-pub use alloc::sync::{Arc, Weak};
 
 /// 64-bit atomics are conditionally compiled based on target architecture support.
 #[cfg(target_has_atomic = "64")]
