@@ -8,17 +8,33 @@ license = "MIT"
 keywords = ["no_std", "macros", "sync"]
 categories = ["no-std"]
 repository = "https://github.com/hianova/no_std_tool"
+
+
 [dependencies]
-lazy_static = { version = "1.4", features = ["spin_no_std"] }
-heapless = "0.8"
+lazy_static = { workspace = true }
+heapless = { workspace = true }
 no_std_tool_macros = { path = "no_std_tool_macros", version = "1.1.0" }
-ahash = { version = "0.8", default-features = false }
-hashbrown = { version = "0.14", default-features = false, features = ["inline-more", "ahash"] }
+ahash = { workspace = true }
+hashbrown = { workspace = true }
+rkyv = { workspace = true }
+spin = { workspace = true }
+libm = { workspace = true }
+bytecheck = { workspace = true }
+ed25519-dalek = { workspace = true }
+rand_core = { workspace = true }
+sha2 = { workspace = true }
+serde = { workspace = true }
 
-rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
-
-
-
+[features]
+default = []
+std = [
+    "rkyv/std",
+    "ed25519-dalek/std",
+    "sha2/std",
+    "bytecheck/std",
+    "rand_core/std",
+    "ahash/std",
+]
 [lints.rust]
 # deny all warnings natively
 warnings = "deny"

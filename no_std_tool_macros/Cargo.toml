@@ -7,6 +7,8 @@ description = "Macros for no_std_tool"
 license = "MIT"
 repository = "https://github.com/hianova/no_std_tool"
 
+exclude = [".covopt/"]
+
 [lib]
 proc-macro = true
 

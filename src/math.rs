@@ -13,7 +13,7 @@ pub const FIXED_POINT_ONE: i32 = 1 << FIXED_POINT_SHIFT;
 /// Returns exp(x) in Q16.16 format. Returns `None` on overflow.
 /// Uses the property: exp(x) = 2^(x * log2(e))
 pub fn exp_approx_q16(x: i32) -> Option<i32> {
-    if x < -10 * FIXED_POINT_ONE {
+    if x < -10 * FIXED_POINT_ONE { // COVOPT_ANCHOR
         return Some(0); // exp(x) approaches 0 for large negative numbers
     }
     if x > 10 * FIXED_POINT_ONE {
@@ -56,7 +56,7 @@ pub fn rsqrt_approx_i32(x: u32) -> Option<u32> {
 /// Expects standard i8 input and returns standard i8. Returns `None` on overflow.
 pub fn silu_approx_i8(x: i8) -> Option<i8> {
     // Convert x to Q16.16
-    let x_q16 = (x as i32) << FIXED_POINT_SHIFT;
+    let x_q16 = (x as i32) << FIXED_POINT_SHIFT; // COVOPT_ANCHOR_SILU
     let exp_neg_x = exp_approx_q16(-x_q16)?;
 
     let denom = FIXED_POINT_ONE + exp_neg_x;

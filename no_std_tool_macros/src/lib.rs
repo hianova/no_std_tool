@@ -101,7 +101,7 @@ pub fn auto_static(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let token_name = format_ident!("{}Token", camel_partition);
 
-    let num_bitmap_words = (capacity + 63) / 64;
+    let num_bitmap_words = capacity.div_ceil(64);
 
     // 4. Generate Output
     let expanded = quote! {

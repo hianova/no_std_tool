@@ -138,14 +138,11 @@ impl<T, const N: usize> BoundedQueue<T, N> {
             ) {
                 Ok(_) => {
                     // Successfully claimed tail. Wait for the slot to become truly EMPTY
-                    // (in case of memory reordering from consumer) and set it to WRITING.
-                    while slot
-                        .state
-                        .compare_exchange_weak(EMPTY, WRITING, Ordering::Acquire, Ordering::Relaxed)
-                        .is_err()
-                    {
+                    // (in case of memory reordering from consumer).
+                    while slot.state.load(Ordering::Acquire) != EMPTY {
                         core::hint::spin_loop();
                     }
+                    slot.state.store(WRITING, Ordering::Release);
                     unsafe {
                         (*slot.data.get()).write(item);
                     }

@@ -5,7 +5,31 @@ fuzz_iterations = 5
 expected = "O(1)"
 n_values = "100,500,1000"
 target_file = "src/math.rs"
-target_line = 16
+target_marker = "COVOPT_ANCHOR"
 require_cache_padding = false
 require_branch_hints = false
+require_aerospace_grade = true
+
+[[target]]
+test = "test_silu_approx"
+expected = "O(1)"
+n_values = "100,500,1000"
+target_file = "src/math.rs"
+target_marker = "COVOPT_ANCHOR_SILU"
+require_aerospace_grade = true
+
+[[target]]
+test = "collections::bloom::tests::test_bloom_filter"
+expected = "O(1)"
+n_values = "100,500,1000"
+target_file = "src/collections/bloom.rs"
+target_marker = "COVOPT_ANCHOR_BLOOM"
+require_aerospace_grade = true
+
+[[target]]
+test = "scriptgo_vm::vm::tests::test_audit"
+expected = "O(N)"
+n_values = "100,500,1000"
+target_file = "src/scriptgo_vm/vm.rs"
+target_marker = "COVOPT_ANCHOR_VM"
 require_aerospace_grade = true

@@ -37,3 +37,12 @@ macro_rules! module {
         }
     };
 }
+
+/// A macro used by CovOpt-Analyzer to tune performance parameters automatically.
+/// At compile time, this simply resolves to the default value.
+#[macro_export]
+macro_rules! covopt_param {
+    ($name:expr, $default:expr, $range:expr) => {
+        $default
+    };
+}

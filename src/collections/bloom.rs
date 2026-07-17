@@ -137,7 +137,7 @@ impl<const N: usize> SimpleBloom<N> {
         let h2 = (hash >> 32) as u32;
 
         for i in 0..4u32 {
-            let combined_hash = h1.wrapping_add(i.wrapping_mul(h2)) as usize;
+            let combined_hash = h1.wrapping_add(i.wrapping_mul(h2)) as usize; // COVOPT_ANCHOR_BLOOM
             let bit_idx = combined_hash % Self::NUM_BITS;
             if (self.bits[bit_idx / 64].load(Ordering::Relaxed) & (1 << (bit_idx % 64))) == 0 {
                 return false;
@@ -219,6 +219,7 @@ impl<const N: usize> SimpleBloom<N> {
 
 #[cfg(test)]
 mod tests {
+    extern crate std;
     use super::*;
 
     #[test]
