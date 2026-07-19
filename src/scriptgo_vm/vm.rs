@@ -162,7 +162,7 @@ impl ScriptVm {
 
         loop {
             // Batch watchdog check and max_steps: only poll every 256 instructions
-            let poll_mask = crate::covopt_param!("watchdog_poll_mask", 0xFF, 0x01..=0xFFF);
+            let poll_mask = crate::covopt_param!("watchdog_poll_mask", 0xFFu32, 0x01u32..=0xFFFu32);
             if unlikely(steps & poll_mask == 0) {
                 if unlikely(steps >= max_steps) {
                     return Err(VmError::OutOfFuel { pc: self.pc });
@@ -272,36 +272,36 @@ impl ScriptVm {
                 }
                 20 => {
                     if self.registers[inst.a()] == 0 {
-                        self.pc = inst.b() as usize;
+                        self.pc = inst.b();
                     }
                 }
                 21 => {
                     if self.registers[inst.a()] == self.registers[inst.b()] {
-                        self.pc = inst.c() as usize;
+                        self.pc = inst.c();
                     }
                 }
                 22 => {
                     if self.registers[inst.a()] < self.registers[inst.b()] {
-                        self.pc = inst.c() as usize;
+                        self.pc = inst.c();
                     }
                 }
                 23 => {
                     if self.registers[inst.a()] > self.registers[inst.b()] {
-                        self.pc = inst.c() as usize;
+                        self.pc = inst.c();
                     }
                 }
                 24 => {
                     let a_val = f32::from_bits(self.registers[inst.a()]);
                     let b_val = f32::from_bits(self.registers[inst.b()]);
                     if a_val < b_val {
-                        self.pc = inst.c() as usize;
+                        self.pc = inst.c();
                     }
                 }
                 25 => {
                     let a_val = f32::from_bits(self.registers[inst.a()]);
                     let b_val = f32::from_bits(self.registers[inst.b()]);
                     if a_val > b_val {
-                        self.pc = inst.c() as usize;
+                        self.pc = inst.c();
                     }
                 }
 
