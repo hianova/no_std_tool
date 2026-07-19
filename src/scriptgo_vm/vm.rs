@@ -35,6 +35,7 @@ fn unlikely(b: bool) -> bool {
 pub type UiHandler = fn(usize, usize, usize);
 
 #[repr(align(64))]
+#[repr(align(64))]
 pub struct ScriptVm {
     pub registers: [u32; 256],
     pub pc: usize,
@@ -163,7 +164,7 @@ impl ScriptVm {
         loop {
             // Batch watchdog check and max_steps: only poll every 256 instructions
             let poll_mask = crate::covopt_param!("watchdog_poll_mask", 0xFFu32, 0x01u32..=0xFFFu32);
-            if unlikely(steps & poll_mask == 0) {
+            if (steps & poll_mask) == 0 {
                 if unlikely(steps >= max_steps) {
                     return Err(VmError::OutOfFuel { pc: self.pc });
                 }
@@ -176,132 +177,132 @@ impl ScriptVm {
             self.pc += 1;
             steps += 1; // COVOPT_ANCHOR_VM
 
-            let opcode = inst.opcode();
+            let opcode = crate::opcode!(inst);
 
             match opcode {
                 0 => break, // Halt
                 1 => {
-                    let a = inst.a();
-                    self.registers[a] = inst.b() as u32;
+                    let a = crate::inst_a!(inst);
+                    self.registers[a] = crate::inst_b!(inst) as u32;
                 }
                 2 => {
-                    let a = inst.a();
-                    self.registers[a] = inst.imm16() as u32;
+                    let a = crate::inst_a!(inst);
+                    self.registers[a] = crate::inst_imm16!(inst) as u32;
                 }
 
                 3 => {
-                    let a = inst.a();
-                    self.registers[a] = self.registers[inst.b()].wrapping_add(self.registers[inst.c()]);
+                    let a = crate::inst_a!(inst);
+                    self.registers[a] = self.registers[crate::inst_b!(inst)].wrapping_add(self.registers[crate::inst_c!(inst)]);
                 }
                 4 => {
-                    let a = inst.a();
-                    self.registers[a] = self.registers[inst.b()].wrapping_sub(self.registers[inst.c()]);
+                    let a = crate::inst_a!(inst);
+                    self.registers[a] = self.registers[crate::inst_b!(inst)].wrapping_sub(self.registers[crate::inst_c!(inst)]);
                 }
                 5 => {
-                    let a = inst.a();
-                    self.registers[a] = self.registers[inst.b()].wrapping_mul(self.registers[inst.c()]);
+                    let a = crate::inst_a!(inst);
+                    self.registers[a] = self.registers[crate::inst_b!(inst)].wrapping_mul(self.registers[crate::inst_c!(inst)]);
                 }
                 6 => {
-                    let a = inst.a();
-                    let divisor = self.registers[inst.c()];
+                    let a = crate::inst_a!(inst);
+                    let divisor = self.registers[crate::inst_c!(inst)];
                     if divisor == 0 {
                         return Err(VmError::DivideByZero { pc: self.pc - 1 });
                     }
-                    self.registers[a] = self.registers[inst.b()] / divisor;
+                    self.registers[a] = self.registers[crate::inst_b!(inst)] / divisor;
                 }
                 7 => {
-                    let a = inst.a();
-                    let divisor = self.registers[inst.c()];
+                    let a = crate::inst_a!(inst);
+                    let divisor = self.registers[crate::inst_c!(inst)];
                     if divisor == 0 {
                         return Err(VmError::DivideByZero { pc: self.pc - 1 });
                     }
-                    self.registers[a] = self.registers[inst.b()] % divisor;
+                    self.registers[a] = self.registers[crate::inst_b!(inst)] % divisor;
                 }
                 8 => {
                     // FAdd
-                    let b_val = f32::from_bits(self.registers[inst.b()]);
-                    let c_val = f32::from_bits(self.registers[inst.c()]);
-                    self.registers[inst.a()] = (b_val + c_val).to_bits();
+                    let b_val = f32::from_bits(self.registers[crate::inst_b!(inst)]);
+                    let c_val = f32::from_bits(self.registers[crate::inst_c!(inst)]);
+                    self.registers[crate::inst_a!(inst)] = (b_val + c_val).to_bits();
                 }
                 9 => {
                     // FSub
-                    let b_val = f32::from_bits(self.registers[inst.b()]);
-                    let c_val = f32::from_bits(self.registers[inst.c()]);
-                    self.registers[inst.a()] = (b_val - c_val).to_bits();
+                    let b_val = f32::from_bits(self.registers[crate::inst_b!(inst)]);
+                    let c_val = f32::from_bits(self.registers[crate::inst_c!(inst)]);
+                    self.registers[crate::inst_a!(inst)] = (b_val - c_val).to_bits();
                 }
                 10 => {
                     // FMul
-                    let b_val = f32::from_bits(self.registers[inst.b()]);
-                    let c_val = f32::from_bits(self.registers[inst.c()]);
-                    self.registers[inst.a()] = (b_val * c_val).to_bits();
+                    let b_val = f32::from_bits(self.registers[crate::inst_b!(inst)]);
+                    let c_val = f32::from_bits(self.registers[crate::inst_c!(inst)]);
+                    self.registers[crate::inst_a!(inst)] = (b_val * c_val).to_bits();
                 }
                 11 => {
                     // FDiv
-                    let divisor = f32::from_bits(self.registers[inst.c()]);
+                    let divisor = f32::from_bits(self.registers[crate::inst_c!(inst)]);
                     if divisor == 0.0 {
                         return Err(VmError::DivideByZero { pc: self.pc - 1 });
                     }
-                    let b_val = f32::from_bits(self.registers[inst.b()]);
-                    self.registers[inst.a()] = (b_val / divisor).to_bits();
+                    let b_val = f32::from_bits(self.registers[crate::inst_b!(inst)]);
+                    self.registers[crate::inst_a!(inst)] = (b_val / divisor).to_bits();
                 }
 
                 12 => {
-                    self.registers[inst.a()] = self.registers[inst.b()] & self.registers[inst.c()];
+                    self.registers[crate::inst_a!(inst)] = self.registers[crate::inst_b!(inst)] & self.registers[crate::inst_c!(inst)];
                 }
                 13 => {
-                    self.registers[inst.a()] = self.registers[inst.b()] | self.registers[inst.c()];
+                    self.registers[crate::inst_a!(inst)] = self.registers[crate::inst_b!(inst)] | self.registers[crate::inst_c!(inst)];
                 }
                 14 => {
-                    self.registers[inst.a()] = self.registers[inst.b()] ^ self.registers[inst.c()];
+                    self.registers[crate::inst_a!(inst)] = self.registers[crate::inst_b!(inst)] ^ self.registers[crate::inst_c!(inst)];
                 }
                 15 => {
-                    self.registers[inst.a()] = self.registers[inst.b()] << self.registers[inst.c()];
+                    self.registers[crate::inst_a!(inst)] = self.registers[crate::inst_b!(inst)] << self.registers[crate::inst_c!(inst)];
                 }
                 16 => {
-                    self.registers[inst.a()] = self.registers[inst.b()] >> self.registers[inst.c()];
+                    self.registers[crate::inst_a!(inst)] = self.registers[crate::inst_b!(inst)] >> self.registers[crate::inst_c!(inst)];
                 }
                 17 => {
-                    self.registers[inst.a()] = if self.registers[inst.b()] == self.registers[inst.c()] { 1 } else { 0 };
+                    self.registers[crate::inst_a!(inst)] = if self.registers[crate::inst_b!(inst)] == self.registers[crate::inst_c!(inst)] { 1 } else { 0 };
                 }
                 18 => {
-                    self.registers[inst.a()] = if self.registers[inst.b()] < self.registers[inst.c()] { 1 } else { 0 };
+                    self.registers[crate::inst_a!(inst)] = if self.registers[crate::inst_b!(inst)] < self.registers[crate::inst_c!(inst)] { 1 } else { 0 };
                 }
 
                 19 => {
-                    self.pc = inst.imm16() as usize;
+                    self.pc = crate::inst_imm16!(inst) as usize;
                 }
                 20 => {
-                    if self.registers[inst.a()] == 0 {
-                        self.pc = inst.b();
+                    if self.registers[crate::inst_a!(inst)] == 0 {
+                        self.pc = crate::inst_b!(inst);
                     }
                 }
                 21 => {
-                    if self.registers[inst.a()] == self.registers[inst.b()] {
-                        self.pc = inst.c();
+                    if self.registers[crate::inst_a!(inst)] == self.registers[crate::inst_b!(inst)] {
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
                 22 => {
-                    if self.registers[inst.a()] < self.registers[inst.b()] {
-                        self.pc = inst.c();
+                    if self.registers[crate::inst_a!(inst)] < self.registers[crate::inst_b!(inst)] {
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
                 23 => {
-                    if self.registers[inst.a()] > self.registers[inst.b()] {
-                        self.pc = inst.c();
+                    if self.registers[crate::inst_a!(inst)] > self.registers[crate::inst_b!(inst)] {
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
                 24 => {
-                    let a_val = f32::from_bits(self.registers[inst.a()]);
-                    let b_val = f32::from_bits(self.registers[inst.b()]);
+                    let a_val = f32::from_bits(self.registers[crate::inst_a!(inst)]);
+                    let b_val = f32::from_bits(self.registers[crate::inst_b!(inst)]);
                     if a_val < b_val {
-                        self.pc = inst.c();
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
                 25 => {
-                    let a_val = f32::from_bits(self.registers[inst.a()]);
-                    let b_val = f32::from_bits(self.registers[inst.b()]);
+                    let a_val = f32::from_bits(self.registers[crate::inst_a!(inst)]);
+                    let b_val = f32::from_bits(self.registers[crate::inst_b!(inst)]);
                     if a_val > b_val {
-                        self.pc = inst.c();
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
 
@@ -309,7 +310,7 @@ impl ScriptVm {
                     if self.sp < 64 {
                         self.call_stack[self.sp] = self.pc;
                         self.sp += 1;
-                        self.pc = inst.imm16() as usize;
+                        self.pc = crate::inst_imm16!(inst) as usize;
                     } else {
                         return Err(VmError::StackOverflow { pc: self.pc - 1 });
                     }
@@ -325,24 +326,24 @@ impl ScriptVm {
 
                 28 => {
                     if let Some(handler) = self.print_handler {
-                        handler(self.registers[inst.a()]);
+                        handler(self.registers[crate::inst_a!(inst)]);
                     }
                 }
                 29 => {
                     if let Some(handler) = self.syscall_handler {
-                        handler(self.registers[inst.a()], self.registers[inst.b()], self.registers[inst.c()]);
+                        handler(self.registers[crate::inst_a!(inst)], self.registers[crate::inst_b!(inst)], self.registers[crate::inst_c!(inst)]);
                     }
                 }
 
                 30 => {
                     // Load
-                    let addr = self.registers[inst.b()].wrapping_add(self.registers[inst.c()]) as usize;
+                    let addr = self.registers[crate::inst_b!(inst)].wrapping_add(self.registers[crate::inst_c!(inst)]) as usize;
                     if addr + 4 <= self.memory.len() {
                         let mut val = 0u32;
                         for i in 0..4 {
                             val |= (self.memory[addr + i] as u32) << (i * 8);
                         }
-                        self.registers[inst.a()] = val;
+                        self.registers[crate::inst_a!(inst)] = val;
                     } else {
                         return Err(VmError::MemoryAccessOutOfBounds {
                             pc: self.pc - 1,
@@ -352,9 +353,9 @@ impl ScriptVm {
                 }
                 31 => {
                     // Store
-                    let addr = self.registers[inst.b()].wrapping_add(self.registers[inst.c()]) as usize;
+                    let addr = self.registers[crate::inst_b!(inst)].wrapping_add(self.registers[crate::inst_c!(inst)]) as usize;
                     if addr + 4 <= self.memory.len() {
-                        let val = self.registers[inst.a()];
+                        let val = self.registers[crate::inst_a!(inst)];
                         for i in 0..4 {
                             self.memory[addr + i] = ((val >> (i * 8)) & 0xFF) as u8;
                         }
@@ -368,27 +369,27 @@ impl ScriptVm {
 
                 32 => {
                     // Exp
-                    let val = self.registers[inst.b()] as i32;
+                    let val = self.registers[crate::inst_b!(inst)] as i32;
                     if let Some(res) = crate::math::exp_approx_q16(val) {
-                        self.registers[inst.a()] = res as u32;
+                        self.registers[crate::inst_a!(inst)] = res as u32;
                     } else {
                         return Err(VmError::MathError { pc: self.pc - 1 });
                     }
                 }
                 33 => {
                     // Rsqrt
-                    let val = self.registers[inst.b()];
+                    let val = self.registers[crate::inst_b!(inst)];
                     if let Some(res) = crate::math::rsqrt_approx_i32(val) {
-                        self.registers[inst.a()] = res;
+                        self.registers[crate::inst_a!(inst)] = res;
                     } else {
                         return Err(VmError::MathError { pc: self.pc - 1 });
                     }
                 }
                 34 => {
                     // Silu
-                    let val = (self.registers[inst.b()] & 0xFF) as i8;
+                    let val = (self.registers[crate::inst_b!(inst)] & 0xFF) as i8;
                     if let Some(res) = crate::math::silu_approx_i8(val) {
-                        self.registers[inst.a()] = (res as u32) & 0xFF;
+                        self.registers[crate::inst_a!(inst)] = (res as u32) & 0xFF;
                     } else {
                         return Err(VmError::MathError { pc: self.pc - 1 });
                     }
@@ -397,23 +398,23 @@ impl ScriptVm {
                 35 => {
                     // HardwareCall
                     if let Some(handler) = self.hardware_handler {
-                        handler(self, inst.a(), inst.b(), inst.c());
+                        handler(self, crate::inst_a!(inst), crate::inst_b!(inst), crate::inst_c!(inst));
                     }
                 }
                 36 => {
                     // UiCall
-                    let cmd = inst.b();
-                    if inst.a() == 0 || !(1..=4).contains(&cmd) {
+                    let cmd = crate::inst_b!(inst);
+                    if crate::inst_a!(inst) == 0 || !(1..=4).contains(&cmd) {
                         // Drop invalid payload silently
                     } else if let Some(handler) = self.ui_handler {
-                        handler(inst.a(), inst.b(), inst.c());
+                        handler(crate::inst_a!(inst), crate::inst_b!(inst), crate::inst_c!(inst));
                     }
                 }
                 37 => {
                     // NeuralCall
                     let handler = self.neural_handler;
                     if let Some(h) = handler {
-                        h(self, inst.a(), inst.b(), inst.c());
+                        h(self, crate::inst_a!(inst), crate::inst_b!(inst), crate::inst_c!(inst));
                     }
                 }
                 _ => {
@@ -461,149 +462,149 @@ impl ScriptVm {
             let mut reg_change = None;
             let mut mem_change = None;
 
-            match inst.opcode() {
+            match crate::opcode!(inst) {
                 0 => break, // Halt
                 1 => {
-                    let val = inst.b() as u32;
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = crate::inst_b!(inst) as u32;
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 2 => {
-                    let val = inst.imm16() as u32;
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = crate::inst_imm16!(inst) as u32;
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
 
                 3 => {
-                    let val = self.registers[inst.b()].wrapping_add(self.registers[inst.c()]);
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)].wrapping_add(self.registers[crate::inst_c!(inst)]);
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 4 => {
-                    let val = self.registers[inst.b()].wrapping_sub(self.registers[inst.c()]);
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)].wrapping_sub(self.registers[crate::inst_c!(inst)]);
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 5 => {
-                    let val = self.registers[inst.b()].wrapping_mul(self.registers[inst.c()]);
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)].wrapping_mul(self.registers[crate::inst_c!(inst)]);
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 6 => {
-                    let divisor = self.registers[inst.c()];
+                    let divisor = self.registers[crate::inst_c!(inst)];
                     if divisor == 0 {
                         return Err(VmError::DivideByZero { pc: self.pc - 1 });
                     }
-                    let val = self.registers[inst.b()] / divisor;
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)] / divisor;
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 7 => {
-                    let divisor = self.registers[inst.c()];
+                    let divisor = self.registers[crate::inst_c!(inst)];
                     if divisor == 0 {
                         return Err(VmError::DivideByZero { pc: self.pc - 1 });
                     }
-                    let val = self.registers[inst.b()] % divisor;
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)] % divisor;
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 8 => {
                     // FAdd
-                    let b = f32::from_bits(self.registers[inst.b()]);
-                    let c = f32::from_bits(self.registers[inst.c()]);
+                    let b = f32::from_bits(self.registers[crate::inst_b!(inst)]);
+                    let c = f32::from_bits(self.registers[crate::inst_c!(inst)]);
                     let val = (b + c).to_bits();
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 9 => {
                     // FSub
-                    let b = f32::from_bits(self.registers[inst.b()]);
-                    let c = f32::from_bits(self.registers[inst.c()]);
+                    let b = f32::from_bits(self.registers[crate::inst_b!(inst)]);
+                    let c = f32::from_bits(self.registers[crate::inst_c!(inst)]);
                     let val = (b - c).to_bits();
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 10 => {
                     // FMul
-                    let b = f32::from_bits(self.registers[inst.b()]);
-                    let c = f32::from_bits(self.registers[inst.c()]);
+                    let b = f32::from_bits(self.registers[crate::inst_b!(inst)]);
+                    let c = f32::from_bits(self.registers[crate::inst_c!(inst)]);
                     let val = (b * c).to_bits();
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 11 => {
                     // FDiv
-                    let divisor = f32::from_bits(self.registers[inst.c()]);
+                    let divisor = f32::from_bits(self.registers[crate::inst_c!(inst)]);
                     if divisor == 0.0 {
                         return Err(VmError::DivideByZero { pc: self.pc - 1 });
                     }
-                    let b = f32::from_bits(self.registers[inst.b()]);
+                    let b = f32::from_bits(self.registers[crate::inst_b!(inst)]);
                     let val = (b / divisor).to_bits();
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
 
                 12 => {
-                    let val = self.registers[inst.b()] & self.registers[inst.c()];
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)] & self.registers[crate::inst_c!(inst)];
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 13 => {
-                    let val = self.registers[inst.b()] | self.registers[inst.c()];
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)] | self.registers[crate::inst_c!(inst)];
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 14 => {
-                    let val = self.registers[inst.b()] ^ self.registers[inst.c()];
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)] ^ self.registers[crate::inst_c!(inst)];
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 15 => {
-                    let val = self.registers[inst.b()] << self.registers[inst.c()];
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)] << self.registers[crate::inst_c!(inst)];
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
                 16 => {
-                    let val = self.registers[inst.b()] >> self.registers[inst.c()];
-                    self.registers[inst.a()] = val;
-                    reg_change = Some((inst.a() as u8, val));
+                    let val = self.registers[crate::inst_b!(inst)] >> self.registers[crate::inst_c!(inst)];
+                    self.registers[crate::inst_a!(inst)] = val;
+                    reg_change = Some((crate::inst_a!(inst) as u8, val));
                 }
 
-                19 => self.pc = inst.imm16() as usize,
+                19 => self.pc = crate::inst_imm16!(inst) as usize,
                 20 => {
-                    if self.registers[inst.a()] == 0 {
-                        self.pc = inst.imm16() as usize;
+                    if self.registers[crate::inst_a!(inst)] == 0 {
+                        self.pc = crate::inst_imm16!(inst) as usize;
                     }
                 }
                 21 => {
-                    if self.registers[inst.a()] == self.registers[inst.b()] {
-                        self.pc = inst.c();
+                    if self.registers[crate::inst_a!(inst)] == self.registers[crate::inst_b!(inst)] {
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
                 22 => {
-                    if self.registers[inst.a()] < self.registers[inst.b()] {
-                        self.pc = inst.c();
+                    if self.registers[crate::inst_a!(inst)] < self.registers[crate::inst_b!(inst)] {
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
                 23 => {
-                    if self.registers[inst.a()] > self.registers[inst.b()] {
-                        self.pc = inst.c();
+                    if self.registers[crate::inst_a!(inst)] > self.registers[crate::inst_b!(inst)] {
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
                 24 => {
                     // JmpIfFLt
-                    let a = f32::from_bits(self.registers[inst.a()]);
-                    let b = f32::from_bits(self.registers[inst.b()]);
+                    let a = f32::from_bits(self.registers[crate::inst_a!(inst)]);
+                    let b = f32::from_bits(self.registers[crate::inst_b!(inst)]);
                     if a < b {
-                        self.pc = inst.c();
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
                 25 => {
                     // JmpIfFGt
-                    let a = f32::from_bits(self.registers[inst.a()]);
-                    let b = f32::from_bits(self.registers[inst.b()]);
+                    let a = f32::from_bits(self.registers[crate::inst_a!(inst)]);
+                    let b = f32::from_bits(self.registers[crate::inst_b!(inst)]);
                     if a > b {
-                        self.pc = inst.c();
+                        self.pc = crate::inst_c!(inst);
                     }
                 }
 
@@ -612,7 +613,7 @@ impl ScriptVm {
                     if self.sp < 64 {
                         self.call_stack[self.sp] = self.pc;
                         self.sp += 1;
-                        self.pc = inst.imm16() as usize;
+                        self.pc = crate::inst_imm16!(inst) as usize;
                     } else {
                         return Err(VmError::StackOverflow { pc: self.pc - 1 });
                     }
@@ -630,27 +631,27 @@ impl ScriptVm {
                 28 => {
                     // PrintReg
                     if let Some(handler) = self.print_handler {
-                        handler(self.registers[inst.a()]);
+                        handler(self.registers[crate::inst_a!(inst)]);
                     }
                 }
                 29 => {
                     // SysCall
                     if let Some(handler) = self.syscall_handler {
-                        handler(self.registers[inst.a()], self.registers[inst.b()], self.registers[inst.c()]);
+                        handler(self.registers[crate::inst_a!(inst)], self.registers[crate::inst_b!(inst)], self.registers[crate::inst_c!(inst)]);
                     }
                 }
 
                 30 => {
                     // Load
                     let addr =
-                        self.registers[inst.b()].wrapping_add(self.registers[inst.c()]) as usize;
+                        self.registers[crate::inst_b!(inst)].wrapping_add(self.registers[crate::inst_c!(inst)]) as usize;
                     if addr + 4 <= self.memory.len() {
                         let mut val = 0u32;
                         for i in 0..4 {
                             val |= (self.memory[addr + i] as u32) << (i * 8);
                         }
-                        self.registers[inst.a()] = val;
-                        reg_change = Some((inst.a() as u8, val));
+                        self.registers[crate::inst_a!(inst)] = val;
+                        reg_change = Some((crate::inst_a!(inst) as u8, val));
                     } else {
                         return Err(VmError::MemoryAccessOutOfBounds {
                             pc: self.pc - 1,
@@ -661,9 +662,9 @@ impl ScriptVm {
                 31 => {
                     // Store
                     let addr =
-                        self.registers[inst.b()].wrapping_add(self.registers[inst.c()]) as usize;
+                        self.registers[crate::inst_b!(inst)].wrapping_add(self.registers[crate::inst_c!(inst)]) as usize;
                     if addr + 4 <= self.memory.len() {
-                        let val = self.registers[inst.a()];
+                        let val = self.registers[crate::inst_a!(inst)];
                         for i in 0..4 {
                             self.memory[addr + i] = ((val >> (i * 8)) & 0xFF) as u8;
                         }
@@ -678,32 +679,32 @@ impl ScriptVm {
 
                 32 => {
                     // Exp
-                    let val = self.registers[inst.b()] as i32;
+                    let val = self.registers[crate::inst_b!(inst)] as i32;
                     if let Some(res) = crate::math::exp_approx_q16(val) {
                         let val_u32 = res as u32;
-                        self.registers[inst.a()] = val_u32;
-                        reg_change = Some((inst.a() as u8, val_u32));
+                        self.registers[crate::inst_a!(inst)] = val_u32;
+                        reg_change = Some((crate::inst_a!(inst) as u8, val_u32));
                     } else {
                         return Err(VmError::MathError { pc: self.pc - 1 });
                     }
                 }
                 33 => {
                     // Rsqrt
-                    let val = self.registers[inst.b()];
+                    let val = self.registers[crate::inst_b!(inst)];
                     if let Some(res) = crate::math::rsqrt_approx_i32(val) {
-                        self.registers[inst.a()] = res;
-                        reg_change = Some((inst.a() as u8, res));
+                        self.registers[crate::inst_a!(inst)] = res;
+                        reg_change = Some((crate::inst_a!(inst) as u8, res));
                     } else {
                         return Err(VmError::MathError { pc: self.pc - 1 });
                     }
                 }
                 34 => {
                     // Silu
-                    let val = (self.registers[inst.b()] & 0xFF) as i8;
+                    let val = (self.registers[crate::inst_b!(inst)] & 0xFF) as i8;
                     if let Some(res) = crate::math::silu_approx_i8(val) {
                         let val_u32 = (res as u32) & 0xFF;
-                        self.registers[inst.a()] = val_u32;
-                        reg_change = Some((inst.a() as u8, val_u32));
+                        self.registers[crate::inst_a!(inst)] = val_u32;
+                        reg_change = Some((crate::inst_a!(inst) as u8, val_u32));
                     } else {
                         return Err(VmError::MathError { pc: self.pc - 1 });
                     }
@@ -713,25 +714,25 @@ impl ScriptVm {
                     // NeuralCall
                     let handler = self.neural_handler;
                     if let Some(h) = handler {
-                        h(self, inst.a(), inst.b(), inst.c());
+                        h(self, crate::inst_a!(inst), crate::inst_b!(inst), crate::inst_c!(inst));
                     }
                 }
                 35 => {
                     // HardwareCall
                     let handler = self.hardware_handler;
                     if let Some(h) = handler {
-                        h(self, inst.a(), inst.b(), inst.c());
+                        h(self, crate::inst_a!(inst), crate::inst_b!(inst), crate::inst_c!(inst));
                     }
                 }
 
                 36 => {
                     // UiCall
                     // FFI border verification: ID must be non-zero, and Command type must be within 1..=4.
-                    let cmd = inst.b();
-                    if inst.a() == 0 || !(1..=4).contains(&cmd) {
+                    let cmd = crate::inst_b!(inst);
+                    if crate::inst_a!(inst) == 0 || !(1..=4).contains(&cmd) {
                         // Drop invalid payload silently on FFI boundary check error.
                     } else if let Some(handler) = self.ui_handler {
-                        handler(inst.a(), inst.b(), inst.c());
+                        handler(crate::inst_a!(inst), crate::inst_b!(inst), crate::inst_c!(inst));
                     }
                 }
 
@@ -958,8 +959,8 @@ mod tests {
 
         vm.debug_hook = Some(|_vm, inst| {
             EXEC_COUNT.fetch_add(1, Ordering::Relaxed);
-            if inst.opcode() == OpCode::LoadImm as u8 {
-                assert_eq!(inst.a(), 1);
+            if crate::opcode!(inst) == OpCode::LoadImm as u8 {
+                assert_eq!(crate::inst_a!(inst), 1);
             }
         });
 
@@ -1019,82 +1020,83 @@ mod tests {
     #[test]
     fn test_audit() {
         let n = std::env::var("COVOPT_N")
-            .unwrap_or(std::string::String::from("1"))
+            .unwrap_or(std::string::String::from("1000"))
             .parse::<usize>()
             .unwrap();
-        let mut vm = ScriptVm::new();
-        vm.print_handler = Some(|_| {});
+        
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut handles = std::vec::Vec::new();
+        for _ in 0..4 {
+            let tx_clone = tx.clone();
+            let handle = std::thread::spawn(move || {
+                let n = n;
+                let mut vm = ScriptVm::new();
+                vm.print_handler = Some(|_| {});
 
-        vm.registers[1] = 2;
-        vm.registers[2] = 1;
+                vm.registers[1] = 2;
+                vm.registers[2] = 1;
 
-        let code = [
-            // Setup
-            Instruction::new(OpCode::LoadImm as u8, 1, 2, 0), // R1 = 2
-            Instruction::new(OpCode::LoadImm as u8, 2, 1, 0), // R2 = 1
-            Instruction::new(OpCode::LoadImm as u8, 0, 0, 0), // R0 = 0
-            
-            // 3: JmpIfZero
-            Instruction::new(OpCode::JmpIfZero as u8, 1, 0, 0), // false
-            Instruction::new(OpCode::JmpIfZero as u8, 0, 6, 0), // true, PC=6
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 6: JmpIfEq
-            Instruction::new(OpCode::JmpIfEq as u8, 1, 2, 0), // false
-            Instruction::new(OpCode::JmpIfEq as u8, 1, 1, 9), // true, PC=9
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 9: JmpIfLt
-            Instruction::new(OpCode::JmpIfLt as u8, 1, 2, 0), // false
-            Instruction::new(OpCode::JmpIfLt as u8, 2, 1, 12), // true, PC=12
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 12: JmpIfGt
-            Instruction::new(OpCode::JmpIfGt as u8, 2, 1, 0), // false
-            Instruction::new(OpCode::JmpIfGt as u8, 1, 2, 15), // true, PC=15
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 15: JmpIfFLt
-            Instruction::new(OpCode::JmpIfFLt as u8, 1, 2, 0), // false
-            Instruction::new(OpCode::JmpIfFLt as u8, 2, 1, 18), // true, PC=18
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 18: JmpIfFGt
-            Instruction::new(OpCode::JmpIfFGt as u8, 2, 1, 0), // false
-            Instruction::new(OpCode::JmpIfFGt as u8, 1, 2, 21), // true, PC=21
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 21: other ops
-            Instruction::new(OpCode::LoadImm16 as u8, 4, 0, 5),
-            Instruction::new(OpCode::Add as u8, 5, 1, 2),
-            Instruction::new(OpCode::Sub as u8, 5, 1, 2),
-            Instruction::new(OpCode::Mul as u8, 5, 1, 2),
-            Instruction::new(OpCode::Div as u8, 5, 1, 2),
-            Instruction::new(OpCode::Mod as u8, 5, 1, 2),
-            Instruction::new(OpCode::And as u8, 5, 1, 2),
-            Instruction::new(OpCode::Or as u8, 5, 1, 2),
-            Instruction::new(OpCode::Xor as u8, 5, 1, 2),
-            Instruction::new(OpCode::Shl as u8, 5, 1, 2),
-            Instruction::new(OpCode::Shr as u8, 5, 1, 2),
-            Instruction::new(OpCode::CmpEq as u8, 5, 1, 2),
-            Instruction::new(OpCode::CmpLt as u8, 5, 1, 2),
-            Instruction::new(OpCode::FAdd as u8, 5, 1, 2),
-            Instruction::new(OpCode::FSub as u8, 5, 1, 2),
-            Instruction::new(OpCode::FMul as u8, 5, 1, 2),
-            Instruction::new(OpCode::FDiv as u8, 5, 1, 2),
-            Instruction::new(OpCode::Store as u8, 1, 0, 2),
-            Instruction::new(OpCode::Load as u8, 5, 0, 2),
-            Instruction::new(OpCode::PrintReg as u8, 5, 0, 0),
-            Instruction::new(OpCode::SysCall as u8, 5, 0, 0),
-            
-            Instruction::new(OpCode::Call as u8, 0, 44, 0), // 42: Push PC=43, Jmp 44
-            Instruction::new(OpCode::Jmp as u8, 0, 45, 0),  // 43: Jmp 45
-            Instruction::new(OpCode::Ret as u8, 0, 0, 0),   // 44: Pops PC=43, Jmp 43
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),  // 45
-        ];
+                let code = [
+                    Instruction::new(OpCode::LoadImm as u8, 1, 2, 0),
+                    Instruction::new(OpCode::LoadImm as u8, 2, 1, 0),
+                    Instruction::new(OpCode::LoadImm as u8, 0, 0, 0),
+                    Instruction::new(OpCode::JmpIfZero as u8, 1, 0, 0),
+                    Instruction::new(OpCode::JmpIfZero as u8, 0, 6, 0),
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    Instruction::new(OpCode::JmpIfEq as u8, 1, 2, 0),
+                    Instruction::new(OpCode::JmpIfEq as u8, 1, 1, 9),
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    Instruction::new(OpCode::JmpIfLt as u8, 1, 2, 0),
+                    Instruction::new(OpCode::JmpIfLt as u8, 2, 1, 12),
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    Instruction::new(OpCode::JmpIfGt as u8, 2, 1, 0),
+                    Instruction::new(OpCode::JmpIfGt as u8, 1, 2, 15),
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    Instruction::new(OpCode::JmpIfFLt as u8, 1, 2, 0),
+                    Instruction::new(OpCode::JmpIfFLt as u8, 2, 1, 18),
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    Instruction::new(OpCode::JmpIfFGt as u8, 2, 1, 0),
+                    Instruction::new(OpCode::JmpIfFGt as u8, 1, 2, 21),
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    Instruction::new(OpCode::LoadImm16 as u8, 4, 0, 5),
+                    Instruction::new(OpCode::Add as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Sub as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Mul as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Div as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Mod as u8, 5, 1, 2),
+                    Instruction::new(OpCode::And as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Or as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Xor as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Shl as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Shr as u8, 5, 1, 2),
+                    Instruction::new(OpCode::CmpEq as u8, 5, 1, 2),
+                    Instruction::new(OpCode::CmpLt as u8, 5, 1, 2),
+                    Instruction::new(OpCode::FAdd as u8, 5, 1, 2),
+                    Instruction::new(OpCode::FSub as u8, 5, 1, 2),
+                    Instruction::new(OpCode::FMul as u8, 5, 1, 2),
+                    Instruction::new(OpCode::FDiv as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Store as u8, 1, 0, 2),
+                    Instruction::new(OpCode::Load as u8, 5, 0, 2),
+                    Instruction::new(OpCode::PrintReg as u8, 5, 0, 0),
+                    Instruction::new(OpCode::SysCall as u8, 5, 0, 0),
+                    Instruction::new(OpCode::Call as u8, 0, 44, 0),
+                    Instruction::new(OpCode::Jmp as u8, 0, 45, 0),
+                    Instruction::new(OpCode::Ret as u8, 0, 0, 0),
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                ];
 
-        for _ in 0..n {
-            vm.run(&code).unwrap();
+                for _ in 0..n {
+                    std::hint::black_box(vm.run(&code).unwrap());
+                }
+                tx_clone.send(()).unwrap();
+            });
+            handles.push(handle);
+        }
+        for _ in 0..4 {
+            rx.recv_timeout(std::time::Duration::from_secs(5)).expect("Watchdog timeout");
+        }
+        for handle in handles {
+            handle.join().unwrap();
         }
         
         // --- Coverage Boost for Error Branches ---

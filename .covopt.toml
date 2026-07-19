@@ -3,21 +3,25 @@ test = "test_exp_approx"
 expected = "O(1)"
 n_values = "100,500,1000"
 require_aerospace_grade = true
+require_stress_test = false
 
 [[target]]
 test = "test_silu_approx"
 expected = "O(1)"
 n_values = "100,500,1000"
 require_aerospace_grade = true
+require_stress_test = false
 
 [[target]]
 test = "collections::bloom::tests::test_bloom_filter"
 expected = "O(1)"
 n_values = "100,500,1000"
 require_aerospace_grade = true
+require_stress_test = false
 
 [[target]]
-test = "scriptgo_vm::vm_tests::test_audit"
+test = "scriptgo_vm::vm::tests::test_audit"
 expected = "O(N)"
 n_values = "100,500,1000"
 require_aerospace_grade = true
+require_stress_test = false

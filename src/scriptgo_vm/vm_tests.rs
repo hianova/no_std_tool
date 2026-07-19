@@ -3,26 +3,10 @@ extern crate std;
     use crate::scriptgo_vm::instruction::OpCode;
     use crate::scriptgo_vm::vm::{ScriptVm, VmError};
 
-#[allow(dead_code)]
-#[inline(always)]
-fn unlikely(b: bool) -> bool { b }
 
-#[allow(dead_code)]
-#[repr(align(64))]
-pub struct DummyVmAligned;
-
-    #[test]
+#[test]
     fn test_div_by_zero() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         // LOADIMM 1 10
         // LOADIMM 2 0
         // DIV 3 1 2
@@ -39,16 +23,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_stack_overflow() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         // CALL 0 (recursive call to itself)
         let code = [Instruction::new(OpCode::Call as u8, 0, 0, 0)];
 
@@ -58,16 +33,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_stack_underflow() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         // RET (no call pushed)
         let code = [Instruction::new(OpCode::Ret as u8, 0, 0, 0)];
 
@@ -77,16 +43,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_invalid_opcode() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         let code = [
             Instruction::new(0x99, 0, 0, 0), // 0x99 is undefined
         ];
@@ -103,16 +60,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_floats() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let n = std::env::var("COVOPT_N").unwrap_or(std::string::String::from("1")).parse::<usize>().unwrap();
+let n = std::env::var("COVOPT_N").unwrap_or(std::string::String::from("1")).parse::<usize>().unwrap();
         let mut vm = ScriptVm::new();
         // Load f32 values represented as raw bits
         let val1 = 3.5f32.to_bits();
@@ -130,7 +78,7 @@ pub struct DummyVmAligned;
         ];
 
         for _ in 0..n {
-            vm.run(&code).unwrap();
+            std::hint::black_box(vm.run(&code).unwrap());
         }
 
         assert_eq!(f32::from_bits(vm.registers[3]), 5.0f32);
@@ -141,16 +89,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_memory_load_store() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         // R[1] = 42 (value to store)
         // R[2] = 10 (base address)
         // R[3] = 4 (offset)
@@ -166,7 +105,7 @@ pub struct DummyVmAligned;
             Instruction::new(OpCode::Halt as u8, 0, 0, 0),
         ];
 
-        vm.run(&code).unwrap();
+        std::hint::black_box(vm.run(&code).unwrap());
 
         assert_eq!(vm.registers[4], 42);
         // Verify bytes in memory (little endian)
@@ -178,16 +117,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_math_approximations() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         // EXP: exp_approx_q16
         // R[1] = 0 (Q16.16)
         // RSQRT: rsqrt_approx_i32
@@ -205,7 +135,7 @@ pub struct DummyVmAligned;
             Instruction::new(OpCode::Halt as u8, 0, 0, 0),
         ];
 
-        vm.run(&code).unwrap();
+        std::hint::black_box(vm.run(&code).unwrap());
 
         // exp(0) = 1.0 (Q16.16 -> 65536)
         assert_eq!(vm.registers[4], 65536);
@@ -218,16 +148,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_abort_flag() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         vm.max_steps = None;
         static ABORT: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(true);
         fn abort_checker() -> bool { ABORT.load(core::sync::atomic::Ordering::Relaxed) }
@@ -245,16 +166,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_out_of_fuel() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         vm.max_steps = Some(50);
         let code = [Instruction::new(OpCode::Jmp as u8, 0, 0, 0)];
         let result = vm.run(&code);
@@ -263,16 +175,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_trace_logging() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         vm.tracing_enabled = true;
 
         let code = [
@@ -281,7 +184,7 @@ pub struct DummyVmAligned;
             Instruction::new(OpCode::Halt as u8, 0, 0, 0),
         ];
 
-        vm.run(&code).unwrap();
+        std::hint::black_box(vm.run(&code).unwrap());
 
         assert_eq!(vm.trace_count, 2);
         let trace1 = vm.trace_buffer[0];
@@ -297,16 +200,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_debug_hook() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         use core::sync::atomic::{AtomicUsize, Ordering};
         static EXEC_COUNT: AtomicUsize = AtomicUsize::new(0);
         EXEC_COUNT.store(0, Ordering::Relaxed);
@@ -323,23 +217,14 @@ pub struct DummyVmAligned;
             Instruction::new(OpCode::Halt as u8, 0, 0, 0),
         ];
 
-        vm.run(&code).unwrap();
+        std::hint::black_box(vm.run(&code).unwrap());
         assert_eq!(EXEC_COUNT.load(Ordering::Relaxed), 2);
     }
 
     #[cfg(feature = "std")]
     #[test]
     fn test_panic_recovery() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         vm.print_handler = Some(|_| {
             panic!("Mock handler panic!");
         });
@@ -356,16 +241,7 @@ pub struct DummyVmAligned;
 
     #[test]
     fn test_hot_reload_state_preservation() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
-        let mut vm = ScriptVm::new();
+let mut vm = ScriptVm::new();
         // Set some ephemeral state
         vm.pc = 42;
         vm.sp = 5;
@@ -387,96 +263,99 @@ pub struct DummyVmAligned;
         // Persistent state must be preserved
         assert_eq!(vm.registers[20], 88);
         assert_eq!(vm.memory[10], 55);
-    }
-
-    #[test]
+    }    #[test]
     fn test_audit() {
-    #[allow(dead_code)]
-    #[repr(align(64))]
-    struct DummyPad;
-    
-    #[allow(dead_code)]
-    #[inline(always)]
-    fn unlikely(b: bool) -> bool { b }
-    
-
         let n = std::env::var("COVOPT_N")
-            .unwrap_or(std::string::String::from("1"))
+            .unwrap_or(std::string::String::from("1000"))
             .parse::<usize>()
             .unwrap();
-        let mut vm = ScriptVm::new();
-        vm.print_handler = Some(|_| {});
+        
+        let mut handles = std::vec::Vec::new(); let (tx, rx) = std::sync::mpsc::channel();
+        for _ in 0..4 {
+            let tx_clone = tx.clone(); let handle = std::thread::spawn(move || {
+                let n = n;
+                let mut vm = ScriptVm::new();
+                vm.print_handler = Some(|_| {});
 
-        vm.registers[1] = 2;
-        vm.registers[2] = 1;
+                vm.registers[1] = 2;
+                vm.registers[2] = 1;
 
-        let code = [
-            // Setup
-            Instruction::new(OpCode::LoadImm as u8, 1, 2, 0), // R1 = 2
-            Instruction::new(OpCode::LoadImm as u8, 2, 1, 0), // R2 = 1
-            Instruction::new(OpCode::LoadImm as u8, 0, 0, 0), // R0 = 0
-            
-            // 3: JmpIfZero
-            Instruction::new(OpCode::JmpIfZero as u8, 1, 0, 0), // false
-            Instruction::new(OpCode::JmpIfZero as u8, 0, 6, 0), // true, PC=6
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 6: JmpIfEq
-            Instruction::new(OpCode::JmpIfEq as u8, 1, 2, 0), // false
-            Instruction::new(OpCode::JmpIfEq as u8, 1, 1, 9), // true, PC=9
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 9: JmpIfLt
-            Instruction::new(OpCode::JmpIfLt as u8, 1, 2, 0), // false
-            Instruction::new(OpCode::JmpIfLt as u8, 2, 1, 12), // true, PC=12
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 12: JmpIfGt
-            Instruction::new(OpCode::JmpIfGt as u8, 2, 1, 0), // false
-            Instruction::new(OpCode::JmpIfGt as u8, 1, 2, 15), // true, PC=15
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 15: JmpIfFLt
-            Instruction::new(OpCode::JmpIfFLt as u8, 1, 2, 0), // false
-            Instruction::new(OpCode::JmpIfFLt as u8, 2, 1, 18), // true, PC=18
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 18: JmpIfFGt
-            Instruction::new(OpCode::JmpIfFGt as u8, 2, 1, 0), // false
-            Instruction::new(OpCode::JmpIfFGt as u8, 1, 2, 21), // true, PC=21
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),
-            
-            // 21: other ops
-            Instruction::new(OpCode::LoadImm16 as u8, 4, 0, 5),
-            Instruction::new(OpCode::Add as u8, 5, 1, 2),
-            Instruction::new(OpCode::Sub as u8, 5, 1, 2),
-            Instruction::new(OpCode::Mul as u8, 5, 1, 2),
-            Instruction::new(OpCode::Div as u8, 5, 1, 2),
-            Instruction::new(OpCode::Mod as u8, 5, 1, 2),
-            Instruction::new(OpCode::And as u8, 5, 1, 2),
-            Instruction::new(OpCode::Or as u8, 5, 1, 2),
-            Instruction::new(OpCode::Xor as u8, 5, 1, 2),
-            Instruction::new(OpCode::Shl as u8, 5, 1, 2),
-            Instruction::new(OpCode::Shr as u8, 5, 1, 2),
-            Instruction::new(OpCode::CmpEq as u8, 5, 1, 2),
-            Instruction::new(OpCode::CmpLt as u8, 5, 1, 2),
-            Instruction::new(OpCode::FAdd as u8, 5, 1, 2),
-            Instruction::new(OpCode::FSub as u8, 5, 1, 2),
-            Instruction::new(OpCode::FMul as u8, 5, 1, 2),
-            Instruction::new(OpCode::FDiv as u8, 5, 1, 2),
-            Instruction::new(OpCode::Store as u8, 1, 0, 2),
-            Instruction::new(OpCode::Load as u8, 5, 0, 2),
-            Instruction::new(OpCode::PrintReg as u8, 5, 0, 0),
-            Instruction::new(OpCode::SysCall as u8, 5, 0, 0),
-            
-            Instruction::new(OpCode::Call as u8, 0, 44, 0), // 42: Push PC=43, Jmp 44
-            Instruction::new(OpCode::Jmp as u8, 0, 45, 0),  // 43: Jmp 45
-            Instruction::new(OpCode::Ret as u8, 0, 0, 0),   // 44: Pops PC=43, Jmp 43
-            Instruction::new(OpCode::Halt as u8, 0, 0, 0),  // 45
-        ];
+                let code = [
+                    // Setup
+                    Instruction::new(OpCode::LoadImm as u8, 1, 2, 0), // R1 = 2
+                    Instruction::new(OpCode::LoadImm as u8, 2, 1, 0), // R2 = 1
+                    Instruction::new(OpCode::LoadImm as u8, 0, 0, 0), // R0 = 0
+                    
+                    // 3: JmpIfZero
+                    Instruction::new(OpCode::JmpIfZero as u8, 1, 0, 0), // false
+                    Instruction::new(OpCode::JmpIfZero as u8, 0, 6, 0), // true, PC=6
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    
+                    // 6: JmpIfEq
+                    Instruction::new(OpCode::JmpIfEq as u8, 1, 2, 0), // false
+                    Instruction::new(OpCode::JmpIfEq as u8, 1, 1, 9), // true, PC=9
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    
+                    // 9: JmpIfLt
+                    Instruction::new(OpCode::JmpIfLt as u8, 1, 2, 0), // false
+                    Instruction::new(OpCode::JmpIfLt as u8, 2, 1, 12), // true, PC=12
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    
+                    // 12: JmpIfGt
+                    Instruction::new(OpCode::JmpIfGt as u8, 2, 1, 0), // false
+                    Instruction::new(OpCode::JmpIfGt as u8, 1, 2, 15), // true, PC=15
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    
+                    // 15: JmpIfFLt
+                    Instruction::new(OpCode::JmpIfFLt as u8, 1, 2, 0), // false
+                    Instruction::new(OpCode::JmpIfFLt as u8, 2, 1, 18), // true, PC=18
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    
+                    // 18: JmpIfFGt
+                    Instruction::new(OpCode::JmpIfFGt as u8, 2, 1, 0), // false
+                    Instruction::new(OpCode::JmpIfFGt as u8, 1, 2, 21), // true, PC=21
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),
+                    
+                    // 21: other ops
+                    Instruction::new(OpCode::LoadImm16 as u8, 4, 0, 5),
+                    Instruction::new(OpCode::Add as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Sub as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Mul as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Div as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Mod as u8, 5, 1, 2),
+                    Instruction::new(OpCode::And as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Or as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Xor as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Shl as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Shr as u8, 5, 1, 2),
+                    Instruction::new(OpCode::CmpEq as u8, 5, 1, 2),
+                    Instruction::new(OpCode::CmpLt as u8, 5, 1, 2),
+                    Instruction::new(OpCode::FAdd as u8, 5, 1, 2),
+                    Instruction::new(OpCode::FSub as u8, 5, 1, 2),
+                    Instruction::new(OpCode::FMul as u8, 5, 1, 2),
+                    Instruction::new(OpCode::FDiv as u8, 5, 1, 2),
+                    Instruction::new(OpCode::Store as u8, 1, 0, 2),
+                    Instruction::new(OpCode::Load as u8, 5, 0, 2),
+                    Instruction::new(OpCode::PrintReg as u8, 5, 0, 0),
+                    Instruction::new(OpCode::SysCall as u8, 5, 0, 0),
+                    
+                    Instruction::new(OpCode::Call as u8, 0, 44, 0), // 42: Push PC=43, Jmp 44
+                    Instruction::new(OpCode::Jmp as u8, 0, 45, 0),  // 43: Jmp 45
+                    Instruction::new(OpCode::Ret as u8, 0, 0, 0),   // 44: Pops PC=43, Jmp 43
+                    Instruction::new(OpCode::Halt as u8, 0, 0, 0),  // 45
+                ];
 
-        for _ in 0..n {
-            vm.run(&code).unwrap();
+                for _ in 0..n {
+                    std::hint::black_box(vm.run(&code).unwrap());
+                }
+                tx_clone.send(()).unwrap(); });
+            handles.push(handle);
+        }
+        for _ in 0..4 {
+            rx.recv_timeout(std::time::Duration::from_secs(5)).expect("Watchdog timeout");
+        }
+        for handle in handles {
+            handle.join().unwrap();
         }
         
         // --- Coverage Boost for Error Branches ---
@@ -608,5 +487,13 @@ pub struct DummyVmAligned;
             Instruction::new(OpCode::Halt as u8, 0, 0, 0),
         ];
         let _ = vm_err.run_fast(&code_math_silu);
-
+                tx_clone.send(()).unwrap(); });
+            handles.push(handle);
+        }
+        for _ in 0..4 {
+            rx.recv_timeout(std::time::Duration::from_secs(5)).expect("Watchdog timeout");
+        }
+        for handle in handles {
+            handle.join().unwrap();
+        }
     }

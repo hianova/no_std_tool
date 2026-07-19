@@ -53,33 +53,44 @@ pub enum OpCode {
 #[repr(C)]
 pub struct Instruction(pub u32);
 
+
 impl Instruction {
     pub const fn new(opcode: u8, a: u8, b: u8, c: u8) -> Self {
         Self((opcode as u32) | ((a as u32) << 8) | ((b as u32) << 16) | ((c as u32) << 24))
     }
+}
 
-    #[inline(always)]
-    pub fn opcode(&self) -> u8 {
-        (self.0 & 0xFF) as u8
-    }
+#[macro_export]
+macro_rules! opcode {
+    ($inst:expr) => {
+        ($inst.0 & 0xFF) as u8
+    };
+}
 
-    #[inline(always)]
-    pub fn a(&self) -> usize {
-        ((self.0 >> 8) & 0xFF) as usize
-    }
+#[macro_export]
+macro_rules! inst_a {
+    ($inst:expr) => {
+        (($inst.0 >> 8) & 0xFF) as usize
+    };
+}
 
-    #[inline(always)]
-    pub fn b(&self) -> usize {
-        ((self.0 >> 16) & 0xFF) as usize
-    }
+#[macro_export]
+macro_rules! inst_b {
+    ($inst:expr) => {
+        (($inst.0 >> 16) & 0xFF) as usize
+    };
+}
 
-    #[inline(always)]
-    pub fn c(&self) -> usize {
-        ((self.0 >> 24) & 0xFF) as usize
-    }
+#[macro_export]
+macro_rules! inst_c {
+    ($inst:expr) => {
+        (($inst.0 >> 24) & 0xFF) as usize
+    };
+}
 
-    #[inline(always)]
-    pub fn imm16(&self) -> u16 {
-        ((self.0 >> 16) & 0xFFFF) as u16
-    }
+#[macro_export]
+macro_rules! inst_imm16 {
+    ($inst:expr) => {
+        (($inst.0 >> 16) & 0xFFFF) as u16
+    };
 }
