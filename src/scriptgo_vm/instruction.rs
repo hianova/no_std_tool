@@ -47,12 +47,21 @@ pub enum OpCode {
     HardwareCall = 35,
     UiCall = 36,
     NeuralCall = 37,
+    Yield = 38,
+
+    VecAdd = 39,
+    VecMul = 40,
+    VecDot = 41,
+
+    Spawn = 42,
+    Await = 43,
+
+    Mmap = 44,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct Instruction(pub u32);
-
 
 impl Instruction {
     pub const fn new(opcode: u8, a: u8, b: u8, c: u8) -> Self {

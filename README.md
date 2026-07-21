@@ -24,7 +24,8 @@ This crate consolidates essential utilities that are frequently required in embe
   - `base!()` to inject `alloc` and conditional `std` testing blocks.
   - `module!{}` to wrap and suppress common lints during `#![no_std]` integration.
   - `auto_static!`: A specialized macro to safely and effortlessly declare `#![no_std]` thread-safe global static arrays or partitioned registries.
-
+  - `spawn!`, `yield!`, `await!`: Native asynchronous programming macros mapped directly to `scriptgo_vm` primitives, bypassing standard library and OS thread context switching.
+- **`scriptgo_vm`**: Embedded, highly optimized register-based virtual machine (`[OpCode, RegA, RegB, RegC]` ISA). Includes zero-allocation async execution and dynamic event loop scheduling.
 ## Usage
 
 Simply add `no_std_tool` to your `Cargo.toml`. This crate already encapsulates and configures popular `no_std` crates like `lazy_static`, `rkyv`, `hashbrown`, and `ahash`.

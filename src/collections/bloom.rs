@@ -145,7 +145,9 @@ impl<const N: usize> SimpleBloom<N> {
         for i in 0..4u32 {
             let combined_hash = h1.wrapping_add(i.wrapping_mul(h2)) as usize; // COVOPT_ANCHOR_BLOOM
             let bit_idx = combined_hash % Self::NUM_BITS;
-            if unlikely((self.bits[bit_idx / 64].load(Ordering::Relaxed) & (1 << (bit_idx % 64))) == 0) {
+            if unlikely(
+                (self.bits[bit_idx / 64].load(Ordering::Relaxed) & (1 << (bit_idx % 64))) == 0,
+            ) {
                 return false;
             }
         }
@@ -246,20 +248,27 @@ mod tests {
         bloom.clear();
         assert_eq!(bloom.count_set_bits(), 0);
         assert!(!bloom.contains(&entity_id));
+    }
 
-        let mut handles = std::vec::Vec::new(); let (tx, rx) = std::sync::mpsc::channel();
+    #[test]
+    fn test_bloom_filter_concurrent() {
+        let bloom = std::sync::Arc::new(SimpleBloom::<1024>::new());
+        let mut handles = std::vec::Vec::new();
+        let (tx, rx) = std::sync::mpsc::channel();
         for t in 0..4 {
             let b = bloom.clone();
-            let tx_clone = tx.clone(); let handle = std::thread::spawn(move || {
+            let tx_clone = tx.clone();
+            let handle = std::thread::spawn(move || {
                 b.insert(&(t * 10000));
                 std::hint::black_box(());
                 assert!(b.contains(&(t * 10000)));
-                tx_clone.send(()).unwrap(); 
+                tx_clone.send(()).unwrap();
             });
             handles.push(handle);
         }
         for _ in 0..4 {
-            rx.recv_timeout(std::time::Duration::from_secs(5)).expect("Watchdog timeout");
+            rx.recv_timeout(std::time::Duration::from_secs(5))
+                .expect("Watchdog timeout");
         }
         for handle in handles {
             handle.join().unwrap();

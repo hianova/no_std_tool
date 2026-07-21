@@ -14,8 +14,6 @@ pub use hashbrown::{HashMap, HashSet};
 /// This implementation provides static, fixed-capacity equivalents.
 pub use heapless::{FnvIndexMap, FnvIndexSet, LinearMap, String, Vec};
 
-
-
 pub mod mpsc_queue;
 pub use mpsc_queue::BoundedQueue;
 
