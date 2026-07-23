@@ -82,6 +82,18 @@ impl<const N: usize> SimpleBloom<N> {
         }
     }
 
+    #[cfg(feature = "std")]
+    pub fn new_boxed() -> alloc::boxed::Box<Self> {
+        let mut b = unsafe { alloc::boxed::Box::<Self>::new_zeroed().assume_init() };
+        b.hash_builder = RandomState::new();
+        b
+    }
+
+    #[cfg(feature = "std")]
+    pub fn new_arc() -> alloc::sync::Arc<Self> {
+        alloc::sync::Arc::from(Self::new_boxed())
+    }
+
     /// Inserts `item` into the filter by setting its four representative bits.
     ///
     /// The method hashes `item` with AHash to obtain a 64-bit digest, then splits it

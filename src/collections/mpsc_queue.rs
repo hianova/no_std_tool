@@ -61,6 +61,18 @@ impl<T, const N: usize> BoundedQueue<T, N> {
             buffer: [const { Slot::new() }; N],
         }
     }
+    #[cfg(feature = "std")]
+    pub fn new_boxed() -> alloc::boxed::Box<Self> {
+        assert!(
+            N.is_power_of_two(),
+            "BoundedQueue capacity must be a power of two"
+        );
+        unsafe { alloc::boxed::Box::<Self>::new_zeroed().assume_init() }
+    }
+    #[cfg(feature = "std")]
+    pub fn new_arc() -> alloc::sync::Arc<Self> {
+        alloc::sync::Arc::from(Self::new_boxed())
+    }
     #[doc = " Attempts a wait-free multi-producer enqueue of `item`."]
     #[doc = ""]
     #[doc = " Internally this performs a **fetch-add** (FAA) to speculatively claim a"]
