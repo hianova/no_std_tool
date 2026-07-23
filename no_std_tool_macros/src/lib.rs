@@ -111,6 +111,26 @@ pub fn auto_static(args: TokenStream, input: TokenStream) -> TokenStream {
                 }
                 None
             }
+
+            #[doc = " Safely insert a massive struct by offloading initialization to a temporary 1GB stack thread."]
+            #[doc = " This prevents stack overflow on the main thread (8MB default limit)."]
+            #[cfg(feature = "std")]
+            pub fn insert_large_std<F>(init_fn: F, _token: &mut #token_name) -> Option<usize>
+            where
+                F: FnOnce() -> Self + Send,
+            {
+                std::thread::scope(|s| {
+                    std::thread::Builder::new()
+                        .stack_size(1024 * 1024 * 1024)
+                        .spawn_scoped(s, || {
+                            Self::insert(init_fn(), _token)
+                        })
+                        .unwrap()
+                        .join()
+                        .unwrap()
+                })
+            }
+
             pub fn remove(index: usize, _token: &mut #token_name) -> Option<Self> {
                 if index >= #capacity { return None; }
                 let word_idx = index / 64;
@@ -151,28 +171,3 @@ pub fn auto_static(args: TokenStream, input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-/// AOT transpile ScriptGo (SGL) into zero-cost Rust loops at compile time!
-#[proc_macro]
-pub fn sgl_compile(input: TokenStream) -> TokenStream {
-    let input_lit = parse_macro_input!(input as Lit);
-    if let Lit::Str(str_lit) = input_lit {
-        let mut sgl_code = str_lit.value();
-        
-        // Transpile SGL to Rust
-        // Basic transpilation rules for zero-cost iterators:
-        sgl_code = sgl_code.replace("let ", "let mut ");
-        sgl_code = sgl_code.replace(": Int", ": u32");
-        sgl_code = sgl_code.replace(": Float", ": f64");
-        
-        match TokenStream::from_str(&sgl_code) {
-            Ok(ts) => ts,
-            Err(e) => {
-                let err = format!("Failed to parse transpiled SGL: {:?}", e);
-                let err_ts = quote! { compile_error!(#err); };
-                TokenStream::from(err_ts)
-            }
-        }
-    } else {
-        TokenStream::from(quote! { compile_error!("Expected a string literal containing SGL code"); })
-    }
-}

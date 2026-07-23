@@ -1,4 +1,5 @@
-#![allow(unsafe_op_in_unsafe_fn, dead_code, unused_imports, unused_variables, unused_assignments, unused_mut, unreachable_code)]
+#![deny(unsafe_op_in_unsafe_fn)]
+#![allow(dead_code, unused_imports, unused_variables, unused_assignments, unused_mut, unreachable_code)]
 use crate::vec101_compute::types::vec101_context;
 extern crate alloc;
 #[cfg(target_arch = "x86_64")]
@@ -17,16 +18,16 @@ unsafe fn expand_bits_to_mask(w_32: u32) -> __m256i {
     _mm256_loadu_si256(mask_arr.as_ptr() as *const __m256i)
 }
 #[cfg(target_arch = "x86_64")]
-pub unsafe fn process_row_avx2_gemv(row: usize, ctx: &vec101_context) {
+pub unsafe fn process_row_avx2_gemv(row: usize, ctx: &vec101_context, x_mask: &[u64]) {
     if ctx.blocks_per_row == 0 {
         return;
     }
     match ctx.quant_type {
-        crate::vec101_compute::types::QuantType::Bit1_58 => process_row_avx2_gemv_bit1_58(row, ctx),
+        crate::vec101_compute::types::QuantType::Bit1_58 => process_row_avx2_gemv_bit1_58(row, ctx, x_mask),
     }
 }
 #[cfg(target_arch = "x86_64")]
-unsafe fn process_row_avx2_gemv_bit1_58(row: usize, ctx: &vec101_context) {
+unsafe fn process_row_avx2_gemv_bit1_58(row: usize, ctx: &vec101_context, x_mask: &[u64]) {
     let scale = *ctx.s_stream.add(row);
     let mut final_sum = 0i32;
     let ones_u8 = _mm256_set1_epi8(1);
@@ -72,14 +73,23 @@ unsafe fn process_row_avx2_gemv_bit1_58(row: usize, ctx: &vec101_context) {
             final_sum += ((block_sum_pos - block_sum_neg) * micro_scale) >> 8;
         }
     }
-    let out_ptr = ctx.out_buffer.add(row);
-    *out_ptr += ((final_sum as i64 * scale as i64) >> 16) as i32;
+    let out_val = ((final_sum as i64 * scale as i64) >> 16) as i32;
+    if ctx.enable_liquid {
+        let tau = *ctx.liquid_tau.add(row);
+        let state_ptr = ctx.liquid_state.add(row);
+        let quantized = crate::vec101_compute::liquid_step_i8(out_val, ctx.dt, &mut *state_ptr, tau);
+        *ctx.liquid_out_buffer.add(row) = quantized;
+    } else {
+        let out_ptr = ctx.out_buffer.add(row);
+        *out_ptr += out_val;
+    }
 }
 #[cfg(target_arch = "x86_64")]
 pub unsafe fn process_row_avx2_gemm(
     row: usize,
     ctx: &vec101_context,
     x_t: &[i8],
+    x_mask: &[u64],
     padded_batch: usize,
     row_sums: &mut [i32],
 ) {
@@ -88,7 +98,7 @@ pub unsafe fn process_row_avx2_gemm(
     }
     match ctx.quant_type {
         crate::vec101_compute::types::QuantType::Bit1_58 => {
-            process_row_avx2_gemm_bit1_58(row, ctx, x_t, padded_batch, row_sums)
+            process_row_avx2_gemm_bit1_58(row, ctx, x_t, x_mask, padded_batch, row_sums)
         }
     }
 }
@@ -97,6 +107,7 @@ unsafe fn process_row_avx2_gemm_bit1_58(
     row: usize,
     ctx: &vec101_context,
     x_t: &[i8],
+    x_mask: &[u64],
     padded_batch: usize,
     row_sums: &mut [i32],
 ) {
@@ -109,8 +120,10 @@ unsafe fn process_row_avx2_gemm_bit1_58(
             let micro_scale = w_super.scales[sub_blk] as i32;
             let w_block = &w_super.blocks[sub_blk];
             row_sums.fill(0);
+            let mask_base = col * 32 + sub_blk * 4;
             for sub in 0..4 {
-                let mut pos_bits = w_block.w_pos_bits[sub];
+                let mask = x_mask[mask_base + sub];
+                let mut pos_bits = w_block.w_pos_bits[sub] & mask;
                 while pos_bits != 0 {
                     let tz = pos_bits.trailing_zeros();
                     pos_bits &= pos_bits - 1;
@@ -119,7 +132,7 @@ unsafe fn process_row_avx2_gemm_bit1_58(
                         row_sums[b] += x_t[f * padded_batch + b] as i32;
                     }
                 }
-                let mut neg_bits = w_block.w_neg_bits[sub];
+                let mut neg_bits = w_block.w_neg_bits[sub] & mask;
                 while neg_bits != 0 {
                     let tz = neg_bits.trailing_zeros();
                     neg_bits &= neg_bits - 1;
@@ -135,6 +148,14 @@ unsafe fn process_row_avx2_gemm_bit1_58(
         }
     }
     for b in 0..ctx.batch_size {
-        *ctx.out_buffer.add(b * ctx.num_rows + row) += (row_sums_int[b] * scale) >> 16;
+        let out_val = ((row_sums_int[b] as i64 * scale as i64) >> 16) as i32;
+        if ctx.enable_liquid {
+            let tau = *ctx.liquid_tau.add(row);
+            let state_ptr = ctx.liquid_state.add(b * ctx.num_rows + row);
+            let quantized = crate::vec101_compute::liquid_step_i8(out_val, ctx.dt, &mut *state_ptr, tau);
+            *ctx.liquid_out_buffer.add(b * ctx.num_rows + row) = quantized;
+        } else {
+            *ctx.out_buffer.add(b * ctx.num_rows + row) += out_val;
+        }
     }
 }

@@ -17,12 +17,11 @@
 extern crate alloc;
 
 pub mod collections;
+pub mod compress;
 pub mod debug;
 pub mod macros;
 pub mod math;
-pub mod scriptgo_vm;
 pub mod sync;
 pub mod dualcache_stub;
 pub mod vec101_compute;
 
-pub use no_std_tool_macros::sgl_compile;

@@ -16,14 +16,19 @@ ahash = { workspace = true }
 hashbrown = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 no_std_tool_macros = { path = "no_std_tool_macros" }
+
+
 [features]
 default = []
 std = [
     "ahash/std",
 ]
+
+
 [lints.rust]
 # deny all warnings natively
 warnings = "deny"
+
 
 [lints.clippy]
 all = "deny"

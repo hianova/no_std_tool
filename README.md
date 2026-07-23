@@ -1,66 +1,40 @@
-# `no_std_tool`
+# no_std_tool
 
-A universal foundation library designed for `#![no_std]` bare-metal Rust projects.
+`no_std_tool` is the foundational utility crate for the Universal Project, designed specifically for extreme edge computing, bare-metal environments, and custom OS kernels.
 
-This crate consolidates essential utilities that are frequently required in embedded, OS-development, or other resource-constrained environments where the standard library is unavailable. By centralizing these dependencies, `no_std_tool` isolates the complexity of `no_std` environments and prevents application-layer code from becoming tightly coupled with low-level hardware or environment details.
+## Tech Stack
+- **Rust Edition 2024** (`#![no_std]` by default)
+- **Zero-Allocation Data Structures**
+- **Lock-Free Synchronization**: Built-in architecture-specific inline assembly for atomic operations.
+- **Micro-architecture Tuning**: Integrates with the CovOpt Ontology for Zero-Entropy Tuning via `covopt_param!`.
 
-## Modules & Features
+## Features
+- **Wait-Free Primitives**: `SpinMutex`, `IrqSafeMutex` for IRQ masking on `x86_64` and `aarch64`.
+- **Boilerplate Macros**: `base!` and `module!` to seamlessly strip standard library dependencies.
+- **CovOpt Integration**: Compile-time or runtime parameter injection for Auto-Tuning systems.
 
-- **`sync`**: Synchronization primitives tailored for bare-metal targets.
-  - `SpinMutex` & `SpinMutexGuard`: A lightweight lock relying purely on atomic operations and spin hints.
-  - `CachePadded`: Eliminates false sharing by aligning structures to typical cache line boundaries (64/128 bytes).
-  - `Backoff`: A spin-then-yield backoff helper for tight polling loops to prevent CPU exhaustion.
-  - Full suite of standard library Atomics (`AtomicBool`, `AtomicPtr`, `AtomicU8`..`AtomicU64`, etc.).
-- **`collections`**: Dynamic data structures powered by `alloc`.
-  - `HashMap` and `HashSet` backed by `hashbrown`.
-  - `mpsc_queue::BoundedQueue`: A lock-free, wait-free compatible bounded multi-producer single-consumer queue.
-  - High-performance, non-cryptographic `ahash` hashing algorithms (faster than `SipHash` and DOS-resistant).
-- **`math`**: Zero-float mathematical engine.
-  - Pure integer approximations of floating-point operations like `exp_approx_q16` and `rsqrt_approx_i32`.
-  - Perfect for environments lacking hardware FPU support.
-- **`debug`**: Debugging and lifecycle tracking.
-  - `ScopedResource`: A global atomic tracker to detect memory leaks and ensure thread drops.
-- **`macros`**: Declarative macros for module scaffolding.
-  - `base!()` to inject `alloc` and conditional `std` testing blocks.
-  - `module!{}` to wrap and suppress common lints during `#![no_std]` integration.
-  - `auto_static!`: A specialized macro to safely and effortlessly declare `#![no_std]` thread-safe global static arrays or partitioned registries.
-  - `spawn!`, `yield!`, `await!`: Native asynchronous programming macros mapped directly to `scriptgo_vm` primitives, bypassing standard library and OS thread context switching.
-- **`scriptgo_vm`**: Embedded, highly optimized register-based virtual machine (`[OpCode, RegA, RegB, RegC]` ISA). Includes zero-allocation async execution and dynamic event loop scheduling.
-## Usage
-
-Simply add `no_std_tool` to your `Cargo.toml`. This crate already encapsulates and configures popular `no_std` crates like `lazy_static`, `rkyv`, `hashbrown`, and `ahash`.
-
-```toml
-[dependencies]
-no_std_tool = { path = "../no_std_tool" }
-```
+## Example
 
 ```rust
 #![no_std]
 
-use no_std_tool::collections::HashMap;
 use no_std_tool::sync::SpinMutex;
-use no_std_tool::lazy_static;
-use no_std_tool::rkyv;
+use no_std_tool::covopt_param;
 
-lazy_static! {
-    static ref GLOBAL_MAP: SpinMutex<HashMap<i32, &'static str>> = {
-        let mut m = HashMap::new();
-        m.insert(1, "Hello Bare Metal");
-        SpinMutex::new(m)
-    };
+// Define a dynamically tunable limit
+const SPIN_LIMIT: u32 = covopt_param!("SPIN_LIMIT", 10_000, 100..100_000);
+
+static GLOBAL_STATE: SpinMutex<u32> = SpinMutex::new(0);
+
+fn main() {
+    // Acquire a bounded spin-lock that prevents infinite hanging
+    match GLOBAL_STATE.lock() {
+        Ok(mut guard) => {
+            *guard += 1;
+        }
+        Err(_) => {
+            // Handle timeout / fallback gracefully in bare-metal
+        }
+    }
 }
 ```
-
-## Complexity Auditing
-
-This project is configured for automated algorithmic complexity and performance auditing via `CovOpt-Analyzer`.
-
-You can verify the algorithmic complexity of the underlying operations using:
-```bash
-covopt audit
-```
-
-## License
-
-MIT

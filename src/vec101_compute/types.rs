@@ -56,6 +56,16 @@ pub struct vec101_context {
     #[doc = " Opaque pointer to the hardware backend (e.g., CudaDevice or Metal Device)"]
     #[doc = " The application layer is responsible for its allocation and lifecycle"]
     pub hardware_handle: *mut core::ffi::c_void,
+    #[doc = " Enable Liquid Neural Network ODE integration fusion"]
+    pub enable_liquid: bool,
+    #[doc = " Liquid Time-Constant integration time delta (dt)"]
+    pub dt: f32,
+    #[doc = " Pointer to Liquid Neural Network states"]
+    pub liquid_state: *mut f32,
+    #[doc = " Pointer to Liquid Neural Network tau (time-constant) parameters"]
+    pub liquid_tau: *const i32,
+    #[doc = " Output buffer for quantized i8 states"]
+    pub liquid_out_buffer: *mut i8,
 }
 unsafe impl Send for vec101_context {}
 unsafe impl Sync for vec101_context {}

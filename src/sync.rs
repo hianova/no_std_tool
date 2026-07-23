@@ -67,7 +67,7 @@ impl<T: ?Sized> SpinMutex<T> {
     pub fn lock(&self) -> Result<SpinMutexGuard<'_, T>, TimeoutError> {
         let mut spins = 0u32;
         loop {
-            if spins >= 10_000 {
+            if spins >= crate::covopt_param!("SPIN_MUTEX_LIMIT", 10_000u32, 100u32..=100_000u32) {
                 return Err(TimeoutError);
             }
             spins += 1;
@@ -79,7 +79,7 @@ impl<T: ?Sized> SpinMutex<T> {
                 return Ok(SpinMutexGuard { mutex: self });
             }
             while self.locked.load(Ordering::Relaxed) {
-                if spins >= 10_000 {
+                if spins >= crate::covopt_param!("SPIN_MUTEX_LIMIT", 10_000u32, 100u32..=100_000u32) {
                     return Err(TimeoutError);
                 }
                 core::hint::spin_loop();

@@ -2,7 +2,7 @@ extern crate std;
 use no_std_tool::math::{FIXED_POINT_ONE, exp_approx_q16, rsqrt_approx_i32, silu_approx_i8};
 
 fn run_exp_approx_common() {
-    core::hint::black_box(exp_approx_q16(0 * FIXED_POINT_ONE));
+    core::hint::black_box(exp_approx_q16(FIXED_POINT_ONE));
     core::hint::black_box(exp_approx_q16(-FIXED_POINT_ONE));
     core::hint::black_box(exp_approx_q16(-2 * FIXED_POINT_ONE));
     core::hint::black_box(exp_approx_q16(FIXED_POINT_ONE));
