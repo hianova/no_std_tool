@@ -66,6 +66,10 @@ pub struct vec101_context {
     pub liquid_tau: *const i32,
     #[doc = " Output buffer for quantized i8 states"]
     pub liquid_out_buffer: *mut i8,
+    #[doc = " Pre-allocated scratch buffer for intermediate computations"]
+    pub scratch_buffer: *mut u8,
+    #[doc = " Size of the scratch buffer in bytes"]
+    pub scratch_size: usize,
 }
 unsafe impl Send for vec101_context {}
 unsafe impl Sync for vec101_context {}
