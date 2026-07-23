@@ -5,11 +5,11 @@
 ## Tech Stack
 - **Rust Edition 2024** (`#![no_std]` by default)
 - **Zero-Allocation Data Structures**
-- **Lock-Free Synchronization**: Built-in architecture-specific inline assembly for atomic operations.
+- **Lock-Based Synchronization**: `SpinMutex` provides simple spin-lock capabilities.
 - **Micro-architecture Tuning**: Integrates with the CovOpt Ontology for Zero-Entropy Tuning via `covopt_param!`.
 
 ## Features
-- **Wait-Free Primitives**: `SpinMutex`, `IrqSafeMutex` for IRQ masking on `x86_64` and `aarch64`.
+- **Hardware Primitives**: `IrqSafeMutex` for IRQ masking (currently strictly `x86_64` only).
 - **Boilerplate Macros**: `base!` and `module!` to seamlessly strip standard library dependencies.
 - **CovOpt Integration**: Compile-time or runtime parameter injection for Auto-Tuning systems.
 
