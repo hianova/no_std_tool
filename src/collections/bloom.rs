@@ -1,3 +1,4 @@
+use crate::covopt_param;
 use crate::collections::ahash::RandomState;
 use core::hash::Hash;
 
@@ -59,7 +60,7 @@ impl<const N: usize> Default for SimpleBloom<N> {
 }
 
 impl<const N: usize> SimpleBloom<N> {
-    const NUM_BITS: usize = N * core::mem::size_of::<usize>() * 8;
+    const NUM_BITS: usize = N * (usize::BITS as usize);
 
     /// Creates a new, empty `SimpleBloom` filter with all bits initialised to `0`.
     ///
@@ -117,8 +118,8 @@ impl<const N: usize> SimpleBloom<N> {
         let h1 = hash as u32;
         let h2 = (hash >> 32) as u32;
 
-        for i in 0..4u32 {
-            let combined_hash = h1.wrapping_add(i.wrapping_mul(h2)) as usize;
+        for i in 0..4 {
+            let combined_hash = h1.wrapping_add((i as u32).wrapping_mul(h2)) as usize;
             let bit_idx = combined_hash % Self::NUM_BITS;
             self.bits[bit_idx / 64].fetch_or(1 << (bit_idx % 64), Ordering::Relaxed);
         }
@@ -154,8 +155,8 @@ impl<const N: usize> SimpleBloom<N> {
         let h1 = hash as u32;
         let h2 = (hash >> 32) as u32;
 
-        for i in 0..4u32 {
-            let combined_hash = h1.wrapping_add(i.wrapping_mul(h2)) as usize; // COVOPT_ANCHOR_BLOOM
+        for i in 0..4 {
+            let combined_hash = h1.wrapping_add((i as u32).wrapping_mul(h2)) as usize; // COVOPT_ANCHOR_BLOOM
             let bit_idx = combined_hash % Self::NUM_BITS;
             if unlikely(
                 (self.bits[bit_idx / 64].load(Ordering::Relaxed) & (1 << (bit_idx % 64))) == 0,
@@ -247,7 +248,7 @@ mod tests {
     #[test]
     fn test_bloom_filter() {
         let bloom = std::sync::Arc::new(SimpleBloom::<1024>::new());
-        let entity_id = 42usize;
+        let entity_id = 42;
 
         assert!(!bloom.contains(&entity_id));
         assert_eq!(bloom.count_set_bits(), 0);
@@ -267,9 +268,8 @@ mod tests {
         let bloom = std::sync::Arc::new(SimpleBloom::<1024>::new());
         let mut handles = std::vec::Vec::new();
         let (tx, rx) = std::sync::mpsc::channel();
-        for t in 0..4 {
-            let b = bloom.clone();
-            let tx_clone = tx.clone();
+        let tasks = (0..4).map(|t| (bloom.clone(), tx.clone(), t));
+        for (b, tx_clone, t) in tasks {
             let handle = std::thread::spawn(move || {
                 b.insert(&(t * 10000));
                 std::hint::black_box(());

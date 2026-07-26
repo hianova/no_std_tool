@@ -3,7 +3,6 @@
 #![doc = " This module provides a global resource tracker to ensure that no memory leaks"]
 #![doc = " occur and that all threads and background operations drop correctly in a"]
 #![doc = " `#![no_std]` environment where memory sanitizers might not be available."]
-#![doc = ""]
 #![doc = " **Note for Aerospace-Grade `no_std` Use:**"]
 #![doc = " To truly track dynamic memory allocations, your global allocator must be wrapped in `TrackingAllocator`."]
 #![doc = " For thread tracking, your custom task scheduler must manually invoke `track_thread_spawn` and `track_thread_exit`."]

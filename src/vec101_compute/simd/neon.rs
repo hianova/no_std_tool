@@ -1,6 +1,6 @@
 #![deny(unsafe_op_in_unsafe_fn)]
-#![allow(dead_code, unused_imports, unused_variables, unused_assignments, unused_mut, unreachable_code)]
-use crate::vec101_compute::types::vec101_context;
+use crate::covopt_param;
+use crate::vec101_compute::types::Vector101__Computation__Context;
 #[cfg(target_arch = "aarch64")]
 use core::arch::aarch64::*;
 #[cfg(target_arch = "aarch64")]
@@ -13,24 +13,24 @@ unsafe fn expand_bits_to_mask_neon(w_16: u16, bit_mask: uint8x16_t) -> int8x16_t
 }
 #[cfg(target_arch = "aarch64")]
 #[doc = " # Safety"]
-#[doc = " The caller must ensure that `row` is within bounds and `ctx` pointers are valid."]
-pub unsafe fn process_row_neon_gemv(row: usize, ctx: &vec101_context, x_mask: &[u64]) {
-    if ctx.blocks_per_row == 0 {
+#[doc = " The caller must ensure that `row` is within bounds and `context` pointers are valid."]
+pub unsafe fn process_row_neon_gemv(row: usize, context: &Vector101__Computation__Context, x_mask: &[u64]) {
+    if context.blocks_per_row == 0 {
         return;
     }
-    match ctx.quant_type {
-        crate::vec101_compute::types::QuantType::Bit1_58 => unsafe { process_row_neon_gemv_bit1_58(row, ctx, x_mask) },
+    match context.quant_type {
+        crate::vec101_compute::types::QuantType::Bit1_58 => unsafe { process_row_neon_gemv_bit1_58(row, context, x_mask) },
     }
 }
 #[cfg(target_arch = "aarch64")]
-unsafe fn process_row_neon_gemv_bit1_58(row: usize, ctx: &vec101_context, x_mask: &[u64]) {
-    let scale = unsafe { *ctx.s_stream.add(row) };
+unsafe fn process_row_neon_gemv_bit1_58(row: usize, context: &Vector101__Computation__Context, _x_mask: &[u64]) {
+    let scale = unsafe { *context.s_stream.add(row) };
     let mut final_sum = 0i32;
     let bit_mask_arr: [u8; 16] = [1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128];
     let bit_mask = unsafe { vld1q_u8(bit_mask_arr.as_ptr()) };
-    for col in 0..ctx.blocks_per_row {
-        let block_idx = row * ctx.blocks_per_row + col;
-        let w_super = unsafe { &(*(ctx.w_stream as *const crate::vec101_compute::types::Vec101SuperBlock).add(block_idx)) };
+    for col in 0..context.blocks_per_row {
+        let block_idx = row * context.blocks_per_row + col;
+        let w_super = unsafe { &(*(context.w_stream as *const crate::vec101_compute::types::Vec101SuperBlock).add(block_idx)) };
         for sub_blk in 0..8 {
             let micro_scale = w_super.scales[sub_blk] as i32;
             let w_block = &w_super.blocks[sub_blk];
@@ -40,13 +40,13 @@ unsafe fn process_row_neon_gemv_bit1_58(row: usize, ctx: &vec101_context, x_mask
                 let shift_amt = (sub % 2) * 32;
                 let w_pos_32 = (w_block.w_pos_bits[u64_idx] >> shift_amt) as u32;
                 let w_neg_32 = (w_block.w_neg_bits[u64_idx] >> shift_amt) as u32;
-                let mask_pos_lo = unsafe { expand_bits_to_mask_neon((w_pos_32 & 0xFFFF) as u16, bit_mask) };
+                let mask_pos_lo = unsafe { expand_bits_to_mask_neon((w_pos_32 & 65535) as u16, bit_mask) };
                 let mask_pos_hi = unsafe { expand_bits_to_mask_neon((w_pos_32 >> 16) as u16, bit_mask) };
-                let mask_neg_lo = unsafe { expand_bits_to_mask_neon((w_neg_32 & 0xFFFF) as u16, bit_mask) };
+                let mask_neg_lo = unsafe { expand_bits_to_mask_neon((w_neg_32 & 65535) as u16, bit_mask) };
                 let mask_neg_hi = unsafe { expand_bits_to_mask_neon((w_neg_32 >> 16) as u16, bit_mask) };
                 let w_vec_lo = unsafe { vsubq_s8(mask_neg_lo, mask_pos_lo) };
                 let w_vec_hi = unsafe { vsubq_s8(mask_neg_hi, mask_pos_hi) };
-                let x_ptr = unsafe { ctx.x_stream.add(col * 2048 + sub_blk * 256 + sub * 32) };
+                let x_ptr = unsafe { context.x_stream.add(col * 2048 + sub_blk * 256 + sub * 32) };
                 let x_val_lo = unsafe { vld1q_s8(x_ptr) };
                 let x_val_hi = unsafe { vld1q_s8(x_ptr.add(16)) };
                 unsafe { core :: arch :: asm ! ("sdot {acc:v}.4s, {x:v}.16b, {w:v}.16b" , acc = inout (vreg) acc , x = in (vreg) x_val_lo , w = in (vreg) w_vec_lo ,) };
@@ -57,13 +57,13 @@ unsafe fn process_row_neon_gemv_bit1_58(row: usize, ctx: &vec101_context, x_mask
         }
     }
     let out_val = ((final_sum as i64 * scale as i64) >> 16) as i32;
-    if ctx.enable_liquid {
-        let tau = unsafe { *ctx.liquid_tau.add(row) };
-        let state_ptr = unsafe { ctx.liquid_state.add(row) };
-        let quantized = crate::vec101_compute::liquid_step_i8(out_val, ctx.dt, &mut unsafe { *state_ptr }, tau);
-        unsafe { *ctx.liquid_out_buffer.add(row) = quantized; }
+    if context.enable_liquid {
+        let tau = unsafe { *context.liquid_tau.add(row) };
+        let state_ptr = unsafe { context.liquid_state.add(row) };
+        let quantized = crate::vec101_compute::liquid_step_i8(out_val, context.dt, &mut unsafe { *state_ptr }, tau);
+        unsafe { *context.liquid_out_buffer.add(row) = quantized; }
     } else {
-        let out_ptr = unsafe { ctx.out_buffer.add(row) };
+        let out_ptr = unsafe { context.out_buffer.add(row) };
         unsafe { *out_ptr = (*out_ptr).saturating_add(out_val); }
     }
 }
@@ -71,28 +71,26 @@ unsafe fn process_row_neon_gemv_bit1_58(row: usize, ctx: &vec101_context, x_mask
 fn branch_unlikely() {}
 #[cfg(target_arch = "aarch64")]
 #[doc = " # Safety"]
-#[doc = " The caller must ensure that `row` is within bounds and `ctx` pointers are valid."]
-pub unsafe fn process_row_neon_gemm(row: usize, ctx: &vec101_context, x_t: &[i8], x_mask: &[u64], padded_batch: usize, row_sums: &mut [i32]) {
-    if ctx.blocks_per_row == 0 {
+#[doc = " The caller must ensure that `row` is within bounds and `context` pointers are valid."]
+pub unsafe fn process_row_neon_gemm(row: usize, context: &Vector101__Computation__Context, _x_t: &[i8], _x_mask: &[u64], _padded_batch: usize, row_sums: &mut [i32]) {
+    if context.blocks_per_row == 0 {
         branch_unlikely();
         return;
     }
-    match ctx.quant_type {
-        crate::vec101_compute::types::QuantType::Bit1_58 => unsafe { process_row_neon_gemm_bit1_58(row, ctx, x_t, x_mask, padded_batch, row_sums) },
+    match context.quant_type {
+        crate::vec101_compute::types::QuantType::Bit1_58 => unsafe { process_row_neon_gemm_bit1_58(row, context, _x_t, _x_mask, _padded_batch, row_sums) },
     }
 }
 #[cfg(target_arch = "aarch64")]
-unsafe fn process_row_neon_gemm_bit1_58(row: usize, ctx: &vec101_context, x_t: &[i8], x_mask: &[u64], padded_batch: usize, row_sums: &mut [i32]) {
-    let scale = unsafe { *ctx.s_stream.add(row) };
-    let in_features = ctx.blocks_per_row * 2048;
+unsafe fn process_row_neon_gemm_bit1_58(row: usize, context: &Vector101__Computation__Context, _x_t: &[i8], _x_mask: &[u64], _padded_batch: usize, row_sums: &mut [i32]) {
+    let scale = unsafe { *context.s_stream.add(row) };
+    let in_features = context.blocks_per_row * 2048;
     let bit_mask_arr: [u8; 16] = [1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128];
     let bit_mask = unsafe { vld1q_u8(bit_mask_arr.as_ptr()) };
-    #[repr(align(64))]
-    struct CachePaddedArray([i32; 8]);
-    row_sums[..ctx.batch_size].fill(0);
-    for col in 0..ctx.blocks_per_row {
-        let block_idx = row * ctx.blocks_per_row + col;
-        let w_super = unsafe { &(*(ctx.w_stream as *const crate::vec101_compute::types::Vec101SuperBlock).add(block_idx)) };
+    row_sums[..context.batch_size].fill(0);
+    for col in 0..context.blocks_per_row {
+        let block_idx = row * context.blocks_per_row + col;
+        let w_super = unsafe { &(*(context.w_stream as *const crate::vec101_compute::types::Vec101SuperBlock).add(block_idx)) };
         for sub_blk in 0..8 {
             let micro_scale = w_super.scales[sub_blk] as i32;
             let w_block = &w_super.blocks[sub_blk];
@@ -102,9 +100,9 @@ unsafe fn process_row_neon_gemm_bit1_58(row: usize, ctx: &vec101_context, x_t: &
                 let shift_amt = (sub % 2) * 32;
                 let w_pos_32 = (w_block.w_pos_bits[u64_idx] >> shift_amt) as u32;
                 let w_neg_32 = (w_block.w_neg_bits[u64_idx] >> shift_amt) as u32;
-                let mask_pos_lo = unsafe { expand_bits_to_mask_neon((w_pos_32 & 0xFFFF) as u16, bit_mask) };
+                let mask_pos_lo = unsafe { expand_bits_to_mask_neon((w_pos_32 & 65535) as u16, bit_mask) };
                 let mask_pos_hi = unsafe { expand_bits_to_mask_neon((w_pos_32 >> 16) as u16, bit_mask) };
-                let mask_neg_lo = unsafe { expand_bits_to_mask_neon((w_neg_32 & 0xFFFF) as u16, bit_mask) };
+                let mask_neg_lo = unsafe { expand_bits_to_mask_neon((w_neg_32 & 65535) as u16, bit_mask) };
                 let mask_neg_hi = unsafe { expand_bits_to_mask_neon((w_neg_32 >> 16) as u16, bit_mask) };
                 let w_vec_lo = unsafe { vsubq_s8(mask_neg_lo, mask_pos_lo) };
                 let w_vec_hi = unsafe { vsubq_s8(mask_neg_hi, mask_pos_hi) };
@@ -113,11 +111,11 @@ unsafe fn process_row_neon_gemm_bit1_58(row: usize, ctx: &vec101_context, x_t: &
                 unsafe { vst1q_s8(w_micro.as_mut_ptr().add(offset + 16), w_vec_hi) };
             }
             let mut b_idx = 0;
-            while b_idx + 3 < ctx.batch_size {
-                let ptr0 = unsafe { ctx.x_stream.add(b_idx * in_features) };
-                let ptr1 = unsafe { ctx.x_stream.add((b_idx + 1) * in_features) };
-                let ptr2 = unsafe { ctx.x_stream.add((b_idx + 2) * in_features) };
-                let ptr3 = unsafe { ctx.x_stream.add((b_idx + 3) * in_features) };
+            while b_idx + 3 < context.batch_size {
+                let ptr0 = unsafe { context.x_stream.add(b_idx * in_features) };
+                let ptr1 = unsafe { context.x_stream.add((b_idx + 1) * in_features) };
+                let ptr2 = unsafe { context.x_stream.add((b_idx + 2) * in_features) };
+                let ptr3 = unsafe { context.x_stream.add((b_idx + 3) * in_features) };
                 let mut acc0 = unsafe { vdupq_n_s32(0) };
                 let mut acc1 = unsafe { vdupq_n_s32(0) };
                 let mut acc2 = unsafe { vdupq_n_s32(0) };
@@ -137,8 +135,8 @@ unsafe fn process_row_neon_gemm_bit1_58(row: usize, ctx: &vec101_context, x_t: &
                 row_sums[b_idx + 3] += (unsafe { vaddvq_s32(acc3) } * micro_scale) >> 8;
                 b_idx += 4;
             }
-            while b_idx < ctx.batch_size {
-                let x_batch_ptr = unsafe { ctx.x_stream.add(b_idx * in_features) };
+            while b_idx < context.batch_size {
+                let x_batch_ptr = unsafe { context.x_stream.add(b_idx * in_features) };
                 let mut acc = unsafe { vdupq_n_s32(0) };
                 for chunk in 0..16 {
                     let offset = col * 2048 + sub_blk * 256 + chunk * 16;
@@ -152,7 +150,8 @@ unsafe fn process_row_neon_gemm_bit1_58(row: usize, ctx: &vec101_context, x_t: &
             }
         }
     }
-    for (b, &sum) in row_sums.iter().enumerate().take(ctx.batch_size) {
-        unsafe { *ctx.out_buffer.add(b * ctx.num_rows + row) += ((sum as i64 * scale as i64) >> 16) as i32; }
+    for (b, &sum) in row_sums.iter().enumerate().take(context.batch_size) {
+        unsafe { *context.out_buffer.add(b * context.num_rows + row) += ((sum as i64 * scale as i64) >> 16) as i32; }
     }
 }
+

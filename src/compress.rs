@@ -5,30 +5,31 @@
 //! It utilizes ZigZag encoding to map signed integers to unsigned space,
 //! and LEB128 (Variable-Length Quantity) encoding to pack integers into minimal bytes.
 
+use crate::covopt_param;
 /// ZigZag encoding for 32-bit signed integers.
 /// Maps signed integers to unsigned integers so that numbers
 /// with a small absolute value have a small unsigned value.
 /// e.g., 0 -> 0, -1 -> 1, 1 -> 2, -2 -> 3
 #[inline]
-pub const fn zigzag_encode_i32(n: i32) -> u32 {
+pub fn zigzag_encode_i32(n: i32) -> u32 {
     ((n << 1) ^ (n >> 31)) as u32
 }
 
 /// ZigZag decoding for 32-bit integers.
 #[inline]
-pub const fn zigzag_decode_u32(n: u32) -> i32 {
+pub fn zigzag_decode_u32(n: u32) -> i32 {
     ((n >> 1) as i32) ^ (-((n & 1) as i32))
 }
 
 /// ZigZag encoding for 64-bit signed integers.
 #[inline]
-pub const fn zigzag_encode_i64(n: i64) -> u64 {
+pub fn zigzag_encode_i64(n: i64) -> u64 {
     ((n << 1) ^ (n >> 63)) as u64
 }
 
 /// ZigZag decoding for 64-bit integers.
 #[inline]
-pub const fn zigzag_decode_u64(n: u64) -> i64 {
+pub fn zigzag_decode_u64(n: u64) -> i64 {
     ((n >> 1) as i64) ^ (-((n & 1) as i64))
 }
 
@@ -41,10 +42,10 @@ pub const fn zigzag_decode_u64(n: u64) -> i64 {
 pub fn leb128_encode_u32(mut value: u32, buf: &mut [u8]) -> usize {
     let mut i = 0;
     loop {
-        let mut byte = (value & 0x7F) as u8;
+        let mut byte = (value & 127) as u8;
         value >>= 7;
         if unlikely(value != 0) {
-            byte |= 0x80; // Set continuation bit
+            byte |= 128; // Set continuation bit
         }
         buf[i] = byte;
         i += 1;
@@ -64,10 +65,10 @@ pub fn leb128_encode_u32(mut value: u32, buf: &mut [u8]) -> usize {
 pub fn leb128_encode_u64(mut value: u64, buf: &mut [u8]) -> usize {
     let mut i = 0;
     loop {
-        let mut byte = (value & 0x7F) as u8;
+        let mut byte = (value & 127) as u8;
         value >>= 7;
         if value != 0 {
-            byte |= 0x80;
+            byte |= 128;
         }
         buf[i] = byte;
         i += 1;
@@ -92,9 +93,9 @@ pub fn leb128_decode_u32(buf: &[u8]) -> Option<(u32, usize)> {
             return None;
         }
         let byte = buf[i];
-        result |= ((byte & 0x7F) as u32) << shift;
+        result |= ((byte & 127) as u32) << shift;
         i += 1;
-        if likely((byte & 0x80) == 0) {
+        if likely((byte & 128) == 0) {
             break;
         }
         shift += 7;
@@ -116,9 +117,9 @@ pub fn leb128_decode_u64(buf: &[u8]) -> Option<(u64, usize)> {
             return None;
         }
         let byte = buf[i];
-        result |= ((byte & 0x7F) as u64) << shift;
+        result |= ((byte & 127) as u64) << shift;
         i += 1;
-        if (byte & 0x80) == 0 {
+        if (byte & 128) == 0 {
             break;
         }
         shift += 7;

@@ -1,9 +1,11 @@
+use crate::covopt_param;
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
 const EMPTY: u8 = 0;
 const WRITING: u8 = 1;
 const READY: u8 = 2;
+#[repr(align(64))]
 struct Slot<T> {
     state: AtomicU8,
     data: UnsafeCell<MaybeUninit<T>>,
@@ -38,8 +40,8 @@ unsafe impl<T: Send> Sync for Slot<T> {}
 #[doc = " returns `None` immediately."]
 #[repr(C, align(64))]
 pub struct BoundedQueue<T, const N: usize> {
-    tail: AtomicUsize,
-    head: AtomicUsize,
+    tail: crate::sync::CachePadded<AtomicUsize>,
+    head: crate::sync::CachePadded<AtomicUsize>,
     buffer: [Slot<T>; N],
 }
 unsafe impl<T: Send, const N: usize> Send for BoundedQueue<T, N> {}
@@ -56,8 +58,8 @@ impl<T, const N: usize> BoundedQueue<T, N> {
             "BoundedQueue capacity must be a power of two"
         );
         Self {
-            tail: AtomicUsize::new(0),
-            head: AtomicUsize::new(0),
+            tail: crate::sync::CachePadded { value: AtomicUsize::new(0) },
+            head: crate::sync::CachePadded { value: AtomicUsize::new(0) },
             buffer: [const { Slot::new() }; N],
         }
     }
@@ -90,10 +92,10 @@ impl<T, const N: usize> BoundedQueue<T, N> {
     #[doc = "   never blocks or spins."]
     #[inline(always)]
     pub fn push(&self, item: T) -> Result<(), T> {
-        let mut tail = self.tail.load(Ordering::Relaxed);
+        let mut tail = self.tail.value.load(Ordering::Relaxed);
         let mut spins = 0u32;
         loop {
-            let head = self.head.load(Ordering::Acquire);
+            let head = self.head.value.load(Ordering::Acquire);
             if tail.wrapping_sub(head) >= self.buffer.len() {
                 return Err(item);
             }
@@ -101,13 +103,13 @@ impl<T, const N: usize> BoundedQueue<T, N> {
             let slot = &self.buffer[idx];
             let state = slot.state.load(Ordering::Acquire);
             if state != EMPTY {
-                let actual = self.tail.load(Ordering::Relaxed);
+                let actual = self.tail.value.load(Ordering::Relaxed);
                 if actual == tail {
-                    let current_head = self.head.load(Ordering::Acquire);
+                    let current_head = self.head.value.load(Ordering::Acquire);
                     if tail.wrapping_sub(current_head) >= self.buffer.len() {
                         return Err(item);
                     } else {
-                        if spins >= 10_000 {
+                        if spins >= 10000 {
                             return Err(item);
                         }
                         core::hint::spin_loop();
@@ -119,7 +121,7 @@ impl<T, const N: usize> BoundedQueue<T, N> {
                     continue;
                 }
             }
-            match self.tail.compare_exchange_weak(
+            match self.tail.value.compare_exchange_weak(
                 tail,
                 tail.wrapping_add(1),
                 Ordering::AcqRel,
@@ -160,12 +162,12 @@ impl<T, const N: usize> BoundedQueue<T, N> {
     #[doc = " - `None` — the queue is empty (the next slot is not yet `READY`)."]
     #[inline(always)]
     pub fn pop(&self) -> Option<T> {
-        let idx = self.head.load(Ordering::Relaxed) & (N - 1);
+        let idx = self.head.value.load(Ordering::Relaxed) & (N - 1);
         let slot = &self.buffer[idx];
         if slot.state.load(Ordering::Acquire) == READY {
             let item = unsafe { (*slot.data.get()).assume_init_read() };
             slot.state.store(EMPTY, Ordering::Release);
-            self.head.fetch_add(1, Ordering::Release);
+            self.head.value.fetch_add(1, Ordering::Release);
             Some(item)
         } else {
             None
@@ -175,12 +177,12 @@ impl<T, const N: usize> BoundedQueue<T, N> {
 impl<T, const N: usize> Drop for BoundedQueue<T, N> {
     fn drop(&mut self) {
         loop {
-            let idx = self.head.load(Ordering::Relaxed) & (N - 1);
+            let idx = self.head.value.load(Ordering::Relaxed) & (N - 1);
             let slot = &self.buffer[idx];
             if slot.state.load(Ordering::Acquire) == READY {
                 unsafe { (*slot.data.get()).assume_init_drop() };
                 slot.state.store(EMPTY, Ordering::Relaxed);
-                self.head.fetch_add(1, Ordering::Relaxed);
+                self.head.value.fetch_add(1, Ordering::Relaxed);
             } else {
                 break;
             }

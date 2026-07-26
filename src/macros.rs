@@ -24,14 +24,6 @@ macro_rules! module {
         }
     ) => {
         $(#[$meta])*
-        #[allow(non_camel_case_types)]
-        #[allow(unused_variables)]
-        #[allow(unused_assignments)]
-        #[allow(unused_mut)]
-        #[allow(dead_code)]
-        #[allow(unreachable_code)]
-        #[allow(unexpected_cfgs)]
-        #[allow(unused_imports)]
         $vis mod $name {
             $($item)*
         }
@@ -43,6 +35,9 @@ macro_rules! module {
 #[macro_export]
 macro_rules! covopt_param {
     ($name:expr, $default:expr, $range:expr) => {
+        $default
+    };
+    ($name:expr, $default:expr) => {
         $default
     };
 }

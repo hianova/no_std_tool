@@ -3,6 +3,7 @@
 #![doc = " This module provides a complete set of synchronization primitives and atomic types"]
 #![doc = " suitable for bare-metal, OS-less, or otherwise constrained environments where the"]
 #![doc = " standard library is unavailable."]
+use crate::covopt_param;
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 #[doc = " Error indicating a spinlock timeout."]
@@ -67,7 +68,7 @@ impl<T: ?Sized> SpinMutex<T> {
     pub fn lock(&self) -> Result<SpinMutexGuard<'_, T>, TimeoutError> {
         let mut spins = 0u32;
         loop {
-            if spins >= crate::covopt_param!("SPIN_MUTEX_LIMIT", 10_000u32, 100u32..=100_000u32) {
+            if spins >= 10000 {
                 return Err(TimeoutError);
             }
             spins += 1;
@@ -79,7 +80,7 @@ impl<T: ?Sized> SpinMutex<T> {
                 return Ok(SpinMutexGuard { mutex: self });
             }
             while self.locked.load(Ordering::Relaxed) {
-                if spins >= crate::covopt_param!("SPIN_MUTEX_LIMIT", 10_000u32, 100u32..=100_000u32) {
+                if spins >= 10000 {
                     return Err(TimeoutError);
                 }
                 core::hint::spin_loop();
@@ -178,7 +179,7 @@ impl<T: ?Sized> IrqSafeMutex<T> {
                 saved_rflags: rflags,
             }),
             Err(e) => {
-                if (rflags & 0x200) != 0 {
+                if (rflags & 512) != 0 {
                     unsafe {
                         core::arch::asm!("sti", options(nomem, nostack));
                     }
@@ -207,7 +208,7 @@ impl<T: ?Sized> Drop for IrqSafeMutexGuard<'_, T> {
         unsafe {
             core::mem::ManuallyDrop::drop(&mut self.inner_guard);
         }
-        if (self.saved_rflags & 0x200) != 0 {
+        if (self.saved_rflags & 512) != 0 {
             unsafe {
                 core::arch::asm!("sti", options(nomem, nostack));
             }
@@ -270,3 +271,23 @@ impl AtomicMailboxU32 {
 pub struct CachePadded<T> {
     pub value: T,
 }
+
+impl<T> CachePadded<T> {
+    pub const fn new(value: T) -> Self {
+        Self { value }
+    }
+}
+
+impl<T> core::ops::Deref for CachePadded<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<T> core::ops::DerefMut for CachePadded<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+

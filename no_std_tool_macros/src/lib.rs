@@ -4,7 +4,6 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::visit::Visit;
 use syn::{Error, ItemStruct, Lit, parse_macro_input};
-use std::str::FromStr;
 
 struct AllocVisitor {
     errors: Vec<Error>,

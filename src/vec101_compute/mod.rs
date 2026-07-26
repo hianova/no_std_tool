@@ -1,35 +1,36 @@
+use crate::covopt_param;
 pub mod types;
 pub mod simd;
 
-pub use types::{QuantType, Vec101SuperBlock, vec101_block, vec101_context};
+pub use types::{QuantType, Vec101SuperBlock, Vector101__Block__Descriptor, Vector101__Computation__Context, Vec101Block, Vec101Context};
 
 #[doc = " Safe abstraction for processing a single row in GEMV mode"]
 #[inline(always)]
-pub fn process_row_gemv_safe(row: usize, ctx: &vec101_context, x_mask: &[u64]) {
+pub fn process_row_gemv_safe(row: usize, context: &Vector101__Computation__Context, x_mask: &[u64]) {
     #[cfg(target_arch = "x86_64")]
-    unsafe { simd::avx2::process_row_avx2_gemv(row, ctx, x_mask) };
+    unsafe { simd::avx2::process_row_avx2_gemv(row, context, x_mask) };
     #[cfg(target_arch = "aarch64")]
-    unsafe { simd::neon::process_row_neon_gemv(row, ctx, x_mask) };
+    unsafe { simd::neon::process_row_neon_gemv(row, context, x_mask) };
     #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
-    unsafe { simd::scalar::process_row_scalar_gemv(row, ctx, x_mask) };
+    unsafe { simd::scalar::process_row_scalar_gemv(row, context, x_mask) };
 }
 
 #[doc = " Safe abstraction for processing a single row in GEMM mode"]
 #[inline(always)]
 pub fn process_row_gemm_safe(
     row: usize, 
-    ctx: &vec101_context, 
+    context: &Vector101__Computation__Context, 
     x_t_ref: &[i8], 
     x_mask: &[u64],
     padded_batch: usize, 
     row_sums: &mut [i32]
 ) {
     #[cfg(target_arch = "x86_64")]
-    unsafe { simd::avx2::process_row_avx2_gemm(row, ctx, x_t_ref, x_mask, padded_batch, row_sums) };
+    unsafe { simd::avx2::process_row_avx2_gemm(row, context, x_t_ref, x_mask, padded_batch, row_sums) };
     #[cfg(target_arch = "aarch64")]
-    unsafe { simd::neon::process_row_neon_gemm(row, ctx, x_t_ref, x_mask, padded_batch, row_sums) };
+    unsafe { simd::neon::process_row_neon_gemm(row, context, x_t_ref, x_mask, padded_batch, row_sums) };
     #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
-    unsafe { simd::scalar::process_row_scalar_gemm(row, ctx, x_t_ref, x_mask, padded_batch, row_sums) };
+    unsafe { simd::scalar::process_row_scalar_gemm(row, context, x_t_ref, x_mask, padded_batch, row_sums) };
 }
 
 #[doc = " Liquid Time-Constant (LTC) ODE integration step for Liquid Neural Networks."]

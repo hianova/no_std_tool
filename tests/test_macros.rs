@@ -5,7 +5,7 @@ base!();
 module! {
     pub mod my_test_module {
         pub fn do_something() {
-            let unused = 5; // Should be ignored by #[allow(unused_variables)]
+            let _unused = 5;
         }
     }
 }

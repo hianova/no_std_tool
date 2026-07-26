@@ -15,6 +15,7 @@
 //! - **Macros (`macros`)**: Common boilerplate generators for `#![no_std]` projects.
 
 extern crate alloc;
+extern crate std;
 
 pub mod collections;
 pub mod compress;

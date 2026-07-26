@@ -1,6 +1,6 @@
 [package]
 name = "no_std_tool"
-version = "1.1.0"
+version = "2.0.0"
 edition = "2024"
 authors = ["hianova"]
 description = "Common no_std boilerplate and synchronization macros"
@@ -16,6 +16,7 @@ ahash = { workspace = true }
 hashbrown = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 no_std_tool_macros = { path = "no_std_tool_macros" }
+covopt-macro = { workspace = true }
 
 
 [features]

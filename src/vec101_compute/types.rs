@@ -1,10 +1,12 @@
 #[doc = " The fundamental compute block for vec101."]
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub struct vec101_block {
+pub struct Vector101__Block__Descriptor {
     pub w_pos_bits: [u64; 4],
     pub w_neg_bits: [u64; 4],
 }
+
+pub type Vec101Block = Vector101__Block__Descriptor;
 
 #[doc = " 完美對齊 64-Byte，且維持 256 維度的終極設計！"]
 #[repr(C)]
@@ -13,7 +15,7 @@ pub struct Vec101SuperBlock {
     pub scales: [i16; 8],
     pub offsets: [i16; 8],
     pub _padding: [u8; 32],
-    pub blocks: [vec101_block; 8],
+    pub blocks: [Vector101__Block__Descriptor; 8],
 }
 
 #[doc = " Supported quantization types for Dual Engine"]
@@ -24,7 +26,7 @@ pub enum QuantType {
 
 #[doc = " The runtime context for the vec101 engine."]
 #[repr(C)]
-pub struct vec101_context {
+pub struct Vector101__Computation__Context {
     #[doc = " Quantization type of the current stream"]
     pub quant_type: QuantType,
     #[doc = " Highly compressed SuperBlocks stream or Q4_0 blocks stream (Zero-Copy Archived)"]
@@ -71,5 +73,6 @@ pub struct vec101_context {
     #[doc = " Size of the scratch buffer in bytes"]
     pub scratch_size: usize,
 }
-unsafe impl Send for vec101_context {}
-unsafe impl Sync for vec101_context {}
+pub type Vec101Context = Vector101__Computation__Context;
+unsafe impl Send for Vector101__Computation__Context {}
+unsafe impl Sync for Vector101__Computation__Context {}
