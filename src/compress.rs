@@ -5,7 +5,6 @@
 //! It utilizes ZigZag encoding to map signed integers to unsigned space,
 //! and LEB128 (Variable-Length Quantity) encoding to pack integers into minimal bytes.
 
-use crate::covopt_param;
 /// ZigZag encoding for 32-bit signed integers.
 /// Maps signed integers to unsigned integers so that numbers
 /// with a small absolute value have a small unsigned value.

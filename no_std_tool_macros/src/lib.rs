@@ -83,7 +83,7 @@ pub fn auto_static(args: TokenStream, input: TokenStream) -> TokenStream {
         })
         .collect();
     let token_name = format_ident!("{}Token", camel_partition);
-    let num_bitmap_words = capacity.div_ceil(64);
+    let num_bitmap_words = capacity.div_ceil(covopt_macro::covopt_param!("M_86_45", 64));
     let expanded = quote! {
         #input_ast
         #[cfg_attr(target_vendor = "apple", unsafe(link_section = concat!("__DATA,", #partition)))]

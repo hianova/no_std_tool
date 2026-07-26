@@ -1,4 +1,3 @@
-use crate::covopt_param;
 use crate::collections::ahash::RandomState;
 use core::hash::Hash;
 

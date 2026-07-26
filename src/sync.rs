@@ -3,7 +3,6 @@
 #![doc = " This module provides a complete set of synchronization primitives and atomic types"]
 #![doc = " suitable for bare-metal, OS-less, or otherwise constrained environments where the"]
 #![doc = " standard library is unavailable."]
-use crate::covopt_param;
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 #[doc = " Error indicating a spinlock timeout."]

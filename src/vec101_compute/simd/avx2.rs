@@ -1,6 +1,5 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::covopt_param;
 #[cfg(target_arch = "x86_64")]
 use crate::vec101_compute::types::Vector101__Computation__Context;
 extern crate alloc;

@@ -1,4 +1,3 @@
-use crate::covopt_param;
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicU8, AtomicUsize, Ordering};

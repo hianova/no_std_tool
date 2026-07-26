@@ -1,6 +1,5 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::covopt_param;
 #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
 use crate::vec101_compute::types::Vector101__Computation__Context;
 #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]

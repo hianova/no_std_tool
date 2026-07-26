@@ -1,5 +1,4 @@
 #![deny(unsafe_op_in_unsafe_fn)]
-use crate::covopt_param;
 use crate::vec101_compute::types::Vector101__Computation__Context;
 #[cfg(target_arch = "aarch64")]
 use core::arch::aarch64::*;

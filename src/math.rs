@@ -4,7 +4,6 @@
 #![doc = " (such as exponentials, inverse square roots, and activation functions) using"]
 #![doc = " fixed-point arithmetic. It avoids linking to `libm` and prevents hardware FPU"]
 #![doc = " traps in bare-metal targets."]
-use crate::covopt_param;
 pub const FIXED_POINT_SHIFT: i32 = 16;
 pub const FIXED_POINT_ONE: i32 = 1 << FIXED_POINT_SHIFT;
 #[doc = " Approximates exp(x) where x is in Q16.16 fixed-point format."]

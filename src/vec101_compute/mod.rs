@@ -1,4 +1,3 @@
-use crate::covopt_param;
 pub mod types;
 pub mod simd;
 
