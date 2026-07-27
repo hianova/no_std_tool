@@ -24,6 +24,8 @@ default = []
 std = [
     "ahash/std",
 ]
+bignum = []
+linalg = []
 
 
 [lints.rust]
@@ -33,3 +35,11 @@ warnings = "deny"
 
 [lints.clippy]
 all = "deny"
+
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "benchmark"
+harness = false

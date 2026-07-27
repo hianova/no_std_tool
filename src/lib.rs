@@ -19,10 +19,17 @@ extern crate std;
 
 pub mod collections;
 pub mod compress;
+
+#[cfg(feature = "bignum")]
+pub mod bignum;
+
+#[cfg(feature = "linalg")]
+pub mod linalg;
+
 pub mod debug;
 pub mod macros;
 pub mod math;
+pub mod random;
 pub mod sync;
 pub mod dualcache_stub;
 pub mod vec101_compute;
-

@@ -37,6 +37,9 @@ pub use core::sync::atomic::{
 #[doc = " }"]
 #[doc = " assert_eq!(*mutex.lock().unwrap(), 1);"]
 #[doc = " ```"]
+#[doc = " A wait-free spinlock mutex protecting a shared data cell."]
+#[doc = ""]
+#[doc = " `SpinMutex` uses an `AtomicBool` to provide mutual exclusion."]
 #[repr(C, align(64))]
 pub struct SpinMutex<T: ?Sized> {
     locked: AtomicBool,
